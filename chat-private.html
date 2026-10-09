@@ -3,31 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Riêng 1-1 | CHI DOI CHAT</title>
+    <title>Chat Riêng | CHI DOI CHAT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- CSS Fallback bảo đảm hiển thị màu sắc & Theme Selector -->
     <style>
         html, body { background-color: #0f172a !important; color: #f8fafc !important; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; }
         .bg-slate-900 { background-color: #0f172a !important; }
         .bg-slate-800 { background-color: #1e293b !important; }
         .bg-cyan-600 { background-color: #0891b2 !important; }
-        .bg-cyan-950 { background-color: #083344 !important; }
         .text-cyan-400 { color: #22d3ee !important; }
-        .text-emerald-400 { color: #34d399 !important; }
-        .text-slate-100 { color: #f8fafc !important; }
-        .text-slate-200 { color: #e2e8f0 !important; }
-        .text-slate-400 { color: #94a3b8 !important; }
-        .border-slate-700 { border-color: #334155 !important; }
-        input[type="text"] {
-            background-color: #0f172a !important; color: #ffffff !important; border: 1px solid #334155 !important; border-radius: 0.5rem;
-        }
+        input[type="text"] { background-color: #0f172a !important; color: #fff !important; border: 1px solid #334155 !important; border-radius: 0.5rem; }
         input:focus { border-color: #06b6d4 !important; outline: none; }
-        button { cursor: pointer; }
-        a { text-decoration: none; }
-
-        /* Theme Dynamic Colors */
         [data-theme="emerald"] .text-cyan-400 { color: #34d399 !important; }
         [data-theme="emerald"] .bg-cyan-600 { background-color: #059669 !important; }
         [data-theme="rose"] .text-cyan-400 { color: #fb7185 !important; }
@@ -35,188 +21,72 @@
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
-
-    <!-- NAVIGATION HEADER -->
     <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-shield-cat text-cyan-400 text-2xl"></i>
-                <span class="font-bold text-xl text-cyan-400">CHI DOI CHAT</span>
-            </div>
+            <div class="flex items-center space-x-3"><i class="fa-solid fa-shield-cat text-cyan-400 text-2xl"></i><span class="font-bold text-xl text-cyan-400">CHI DOI CHAT</span></div>
             <nav class="flex items-center space-x-5">
                 <a href="chat-group.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-users"></i> Chat Nhóm</a>
                 <a href="chat-private.html" class="text-cyan-400 font-medium text-sm flex items-center gap-1"><i class="fa-solid fa-lock"></i> Chat Riêng</a>
-                <a href="profile.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-user"></i> Profile</a>
-                <a href="settings.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-gear"></i> Settings</a>
-                <button onclick="auth.logout()" class="text-rose-400 hover:text-rose-300 text-sm ml-2" title="Đăng xuất"><i class="fa-solid fa-right-from-bracket"></i></button>
+                <button onclick="auth.logout()" class="text-rose-400 text-sm ml-2"><i class="fa-solid fa-right-from-bracket"></i></button>
             </nav>
         </div>
     </header>
-
-    <!-- MAIN CHAT CONTAINER -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-5rem)]">
-        
-        <!-- SIDEBAR CHỌN BẠN CHAT 1-1 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-5rem)]">
         <aside class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-60 md:h-full">
-            <div class="p-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-user-lock text-cyan-400"></i>
-                    <h3 class="font-bold text-sm text-slate-100">Chọn Bạn Chat 1-1</h3>
-                </div>
-            </div>
-
-            <div class="p-2 bg-slate-900 border-b border-slate-700">
-                <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
-                    <input type="text" id="search-private-users" oninput="filterPrivateUsers(this.value)" placeholder="Tìm tài khoản..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white outline-none">
-                </div>
-            </div>
-
+            <div class="p-4 border-b border-slate-700"><span class="font-bold text-sm">Chọn Bạn Chat 1-1</span></div>
             <div id="private-users-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
         </aside>
-
-        <!-- KHUNG CHAT RIÊNG 1-1 -->
-        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full relative">
-            
-            <!-- TOOLBAR TRÊN -->
-            <div class="bg-slate-800 p-3 sm:p-4 border-b border-slate-700 flex flex-wrap justify-between items-center gap-2">
+        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full">
+            <div class="p-4 border-b border-slate-700 flex flex-wrap justify-between items-center gap-2">
                 <div>
-                    <h3 id="private-title" class="font-bold text-base sm:text-lg text-cyan-400 flex items-center gap-2">
-                        <i class="fa-solid fa-lock"></i> Chưa chọn đối phương
-                    </h3>
-                    <p id="private-desc" class="text-[11px] text-slate-400">Vui lòng chọn một người dùng từ danh sách bên trái để kết nối trò chuyện bảo mật E2E</p>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <!-- Ô Tìm Kiếm Tin Nhắn -->
-                    <div class="relative">
-                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-xs text-slate-400"></i>
-                        <input type="text" oninput="chat.searchMessages(this.value)" placeholder="Tìm tin nhắn..." class="bg-slate-900 border border-slate-700 rounded-lg pl-7 pr-2 py-1 text-xs text-white outline-none w-28 sm:w-40 focus:w-48 transition-all">
-                    </div>
-
-                    <!-- Nút Đổi Màu Theme -->
-                    <div class="flex gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700">
-                        <button onclick="chat.setTheme('cyan')" class="w-4 h-4 rounded-full bg-cyan-500" title="Xanh Cyan"></button>
-                        <button onclick="chat.setTheme('emerald')" class="w-4 h-4 rounded-full bg-emerald-500" title="Xanh Ngọc"></button>
-                        <button onclick="chat.setTheme('rose')" class="w-4 h-4 rounded-full bg-rose-500" title="Đỏ Hồng"></button>
+                    <h3 id="private-title" class="font-bold text-base text-cyan-400"><i class="fa-solid fa-lock"></i> Chưa chọn đối phương</h3>
+                    <div id="private-actions" class="hidden flex items-center gap-2 mt-2">
+                        <button id="btn-nickname" class="text-xs bg-slate-900 border border-slate-700 text-cyan-400 px-2.5 py-1 rounded-lg"><i class="fa-solid fa-pen"></i> Đổi Biệt Danh</button>
+                        <button id="btn-love" class="text-xs bg-rose-950 border border-rose-800 text-rose-400 px-2.5 py-1 rounded-lg"><i class="fa-solid fa-heart"></i> Mời Người Yêu ❤️</button>
                     </div>
                 </div>
             </div>
-
-            <!-- NƠI CHỨA TIN NHẮN -->
             <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-900"></div>
-
-            <!-- FORM GỬI TIN NHẮN & TẢI ẢNH -->
-            <form onsubmit="chat.sendMessage(event)" class="p-3 bg-slate-800 border-t border-slate-700 flex gap-2 items-center">
-                <!-- Nút Tải Ảnh Mã Hóa -->
-                <button type="button" id="img-btn" disabled onclick="chat.triggerImageUpload()" class="bg-slate-900 hover:bg-slate-700 text-cyan-400 p-3 rounded-lg border border-slate-700 transition disabled:opacity-50" title="Gửi ảnh mã hóa AES-256">
-                    <i class="fa-solid fa-image text-base"></i>
-                </button>
-
-                <input type="text" id="chat-input" disabled placeholder="Nhập tin nhắn riêng..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none disabled:opacity-50">
-                
-                <button type="submit" id="chat-btn" disabled class="bg-cyan-600 hover:bg-cyan-500 text-white px-5 sm:px-6 py-3 rounded-lg font-medium transition flex items-center gap-2 shadow-md shrink-0 disabled:opacity-50">
-                    <span>Gửi</span>
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
+            <form onsubmit="chat.sendMessage(event)" class="p-3 bg-slate-800 border-t border-slate-700 flex gap-2">
+                <button type="button" id="img-btn" disabled onclick="chat.triggerImageUpload()" class="bg-slate-900 text-cyan-400 p-3 rounded-lg border border-slate-700 disabled:opacity-50"><i class="fa-solid fa-image"></i></button>
+                <input type="text" id="chat-input" disabled placeholder="Chọn người dùng để nhắn tin..." class="flex-1 px-4 py-3 text-sm outline-none disabled:opacity-50">
+                <button type="submit" id="chat-btn" disabled class="bg-cyan-600 text-white px-6 py-3 rounded-lg font-medium disabled:opacity-50"><i class="fa-solid fa-paper-plane"></i></button>
             </form>
         </section>
-
     </main>
-
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="js/crypto.js"></script>
-    <script src="js/db.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/chat.js"></script>
+    <script src="js/crypto.js"></script><script src="js/db.js"></script><script src="js/auth.js"></script><script src="js/chat.js"></script>
     <script>
-        let allUsersData = [];
-
         document.addEventListener('DOMContentLoaded', () => {
-            const currentUser = db.getSession();
-            if (!currentUser) {
-                window.location.href = 'login.html';
-                return;
-            }
-
-            // Kích hoạt theo dõi Trạng thái Online
-            db.initPresence(currentUser.id);
-
-            // Lắng nghe danh sách thành viên để chọn bạn Chat Riêng
+            const u = db.getSession();
+            if (!u) return window.location.href = 'login.html';
+            db.initPresence(u.id);
             db.listenUsers((users) => {
-                allUsersData = users;
-                renderPrivateUsers(users, currentUser);
+                const list = document.getElementById('private-users-list');
+                list.innerHTML = '';
+                users.filter(x => x.id !== u.id).forEach(target => {
+                    const nick = db.getLocalNickname(target.id, target.displayName || target.username);
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center gap-3 p-2.5 rounded-xl cursor-pointer hover:bg-slate-700/60';
+                    item.onclick = () => {
+                        const roomId = chat.getPrivateRoomId(u.id, target.id);
+                        document.getElementById('private-title').innerHTML = `<i class="fa-solid fa-user-lock text-cyan-400"></i> Chat Riêng: <span class="text-white">${SecurityEngine.sanitizeHTML(nick)}</span>`;
+                        document.getElementById('private-actions').classList.remove('hidden');
+                        document.getElementById('btn-nickname').onclick = () => chat.promptChangeNickname(target.id, target.displayName || target.username);
+                        document.getElementById('btn-love').onclick = () => chat.proposeLove(target.id, nick);
+                        document.getElementById('chat-input').disabled = false;
+                        document.getElementById('chat-btn').disabled = false;
+                        document.getElementById('img-btn').disabled = false;
+                        chat.switchRoom(roomId, target);
+                        chat.initLoveStatusListener(target.id);
+                    };
+                    item.innerHTML = `<div class="relative"><div class="w-8 h-8 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 text-xs"><i class="${target.icon || 'fa-solid fa-user'}"></i></div><span class="w-2.5 h-2.5 rounded-full ${target.online ? 'bg-emerald-400' : 'bg-slate-500'} absolute bottom-0 right-0 border-2 border-slate-800"></span></div><div class="text-xs font-semibold text-slate-200">${SecurityEngine.sanitizeHTML(nick)}</div>`;
+                    list.appendChild(item);
+                });
             });
-
-            // Áp dụng Theme đã chọn
             chat.applySavedTheme();
         });
-
-        function renderPrivateUsers(users, currentUser) {
-            const container = document.getElementById('private-users-list');
-            if (!container) return;
-            container.innerHTML = '';
-
-            const otherUsers = users.filter(u => u.id !== currentUser.id);
-
-            if (otherUsers.length === 0) {
-                container.innerHTML = `<div class="text-xs text-slate-500 text-center py-4">Chưa có người dùng khác</div>`;
-                return;
-            }
-
-            otherUsers.forEach(u => {
-                let avatarHtml = u.icon && u.icon.startsWith('data:image/')
-                    ? `<img src="${u.icon}" class="w-8 h-8 rounded-full object-cover border border-cyan-500" alt="avatar">`
-                    : `<div class="w-8 h-8 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 text-xs"><i class="${u.icon || 'fa-solid fa-user'}"></i></div>`;
-
-                const item = document.createElement('div');
-                item.className = `flex items-center gap-3 p-2.5 rounded-xl transition cursor-pointer hover:bg-slate-700/60 border border-transparent`;
-                item.onclick = () => selectPrivateTarget(u, currentUser);
-
-                item.innerHTML = `
-                    <div class="relative shrink-0">
-                        ${avatarHtml}
-                        <span class="w-2.5 h-2.5 rounded-full ${u.online ? 'bg-emerald-400' : 'bg-slate-500'} absolute bottom-0 right-0 border-2 border-slate-800"></span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-xs font-semibold text-slate-200 truncate">${SecurityEngine.sanitizeHTML(u.displayName || u.username)}</div>
-                        <div class="text-[10px] ${u.online ? 'text-emerald-400' : 'text-slate-500'}">${u.online ? 'Online' : 'Offline'}</div>
-                    </div>
-                `;
-
-                container.appendChild(item);
-            });
-        }
-
-        function filterPrivateUsers(query) {
-            const currentUser = db.getSession();
-            const keyword = query.toLowerCase().trim();
-            const filtered = allUsersData.filter(u => 
-                u.id !== currentUser.id && (
-                    (u.displayName && u.displayName.toLowerCase().includes(keyword)) ||
-                    (u.username && u.username.toLowerCase().includes(keyword))
-                )
-            );
-            renderPrivateUsers(filtered, currentUser);
-        }
-
-        function selectPrivateTarget(targetUser, currentUser) {
-            const privateRoomId = chat.getPrivateRoomId(currentUser.id, targetUser.id);
-            
-            // Đổi thông tin trên thanh tiêu đề
-            document.getElementById('private-title').innerHTML = `<i class="fa-solid fa-user-lock text-cyan-400"></i> Chat Riêng với: <span class="text-white">${SecurityEngine.sanitizeHTML(targetUser.displayName || targetUser.username)}</span>`;
-            document.getElementById('private-desc').innerText = `Mã hóa AES-256 E2E bảo mật riêng tư với @${SecurityEngine.sanitizeHTML(targetUser.username)}`;
-
-            // Kích hoạt ô nhập liệu & nút tải ảnh
-            document.getElementById('chat-input').disabled = false;
-            document.getElementById('chat-btn').disabled = false;
-            document.getElementById('img-btn').disabled = false;
-            document.getElementById('chat-input').placeholder = `Nhắn tin riêng cho ${targetUser.displayName}...`;
-
-            // Chuyển room lắng nghe
-            chat.switchRoom(privateRoomId, targetUser);
-        }
     </script>
 </body>
 </html>
