@@ -1,5 +1,5 @@
 /**
- * Advanced Chat Engine with Encryption & Interactive Tools
+ * Advanced Chat Engine with Nickname & Love Proposal Extensions
  */
 const chat = {
     currentRoomId: 'group',
@@ -11,24 +11,12 @@ const chat = {
     initRealtimeListeners() {
         const user = db.getSession();
         if (!user) return;
-
-        // Kích hoạt Trạng thái Online
         db.initPresence(user.id);
-
-        // Lắng nghe danh sách bạn bè / thành viên
         db.listenUsers((users) => {
-            if (this.currentRoomId === 'group') {
-                this.renderFriendsList(users, user);
-            }
+            if (this.currentRoomId === 'group') this.renderFriendsList(users, user);
         });
-
-        // Đăng ký sự kiện phím Đang gõ...
         const chatInput = document.getElementById('chat-input');
-        if (chatInput) {
-            chatInput.addEventListener('input', () => this.handleTypingEvent());
-        }
-
-        // Tải màu giao diện đã chọn
+        if (chatInput) chatInput.addEventListener('input', () => this.handleTypingEvent());
         this.applySavedTheme();
     },
 
@@ -37,33 +25,20 @@ const chat = {
     },
 
     switchRoom(roomId, targetUser = null) {
-        if (this.currentRoomId) {
-            db.stopListenMessages(this.currentRoomId);
-        }
-
+        if (this.currentRoomId) db.stopListenMessages(this.currentRoomId);
         this.currentRoomId = roomId;
         this.currentTargetUser = targetUser;
         this.replyingMessage = null;
         this.clearReplyPreview();
 
-        const messagesContainer = document.getElementById('chat-messages');
-        if (messagesContainer) messagesContainer.innerHTML = '';
+        const container = document.getElementById('chat-messages');
+        if (container) container.innerHTML = '';
 
-        // Lắng nghe Tin nhắn mới
-        db.listenMessages(roomId, async (msg) => {
-            await this.renderSingleMessage(msg);
-        });
-
-        // Lắng nghe Tin nhắn ghim
-        db.listenPinnedMessage(roomId, (pinnedMsg) => {
-            this.renderPinnedBar(pinnedMsg);
-        });
-
-        // Lắng nghe Đang gõ phím
+        db.listenMessages(roomId, async (msg) => await this.renderSingleMessage(msg));
+        db.listenPinnedMessage(roomId, (pinned) => this.renderPinnedBar(pinned));
+        
         const currentUser = db.getSession();
-        db.listenTypingStatus(roomId, currentUser.id, (typers) => {
-            this.renderTypingIndicator(typers);
-        });
+        db.listenTypingStatus(roomId, currentUser.id, (typers) => this.renderTypingIndicator(typers));
     },
 
     async sendMessage(e) {
@@ -73,31 +48,34 @@ const chat = {
         if (!text) return;
 
         const currentUser = db.getSession();
-        const encryptedText = await SecurityEngine.encryptAES256(text);
+        if (!currentUser) return window.location.href = 'login.html';
 
-        const msgObj = {
-            id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-            senderId: currentUser.id,
-            senderName: currentUser.displayName || currentUser.username,
-            senderAvatar: currentUser.icon || 'fa-solid fa-user',
-            text: encryptedText,
-            type: 'text',
-            timestamp: Date.now(),
-            replyTo: this.replyingMessage ? {
-                id: this.replyingMessage.id,
-                senderName: this.replyingMessage.senderName,
-                previewText: this.replyingMessage.decryptedText
-            } : null
-        };
+        try {
+            const encryptedText = await SecurityEngine.encryptAES256(text);
+            const msgObj = {
+                id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                senderId: currentUser.id,
+                senderName: currentUser.displayName || currentUser.username,
+                senderAvatar: currentUser.icon || 'fa-solid fa-user',
+                text: encryptedText,
+                type: 'text',
+                timestamp: Date.now(),
+                replyTo: this.replyingMessage ? {
+                    id: this.replyingMessage.id,
+                    senderName: this.replyingMessage.senderName,
+                    previewText: this.replyingMessage.decryptedText
+                } : null
+            };
 
-        await db.saveMessageToFirebase(this.currentRoomId, msgObj);
-        
-        inputEl.value = '';
-        this.clearReplyPreview();
-        db.setTypingStatus(this.currentRoomId, currentUser.id, currentUser.username, false);
+            await db.saveMessageToFirebase(this.currentRoomId, msgObj);
+            inputEl.value = '';
+            this.clearReplyPreview();
+            db.setTypingStatus(this.currentRoomId, currentUser.id, currentUser.username, false);
+        } catch (err) {
+            console.error(err);
+        }
     },
 
-    // Gửi Ảnh Mã Hóa Base64 (AES-256)
     triggerImageUpload() {
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
@@ -105,31 +83,19 @@ const chat = {
         fileInput.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = (ev) => {
                 const img = new Image();
-                img.src = event.target.result;
+                img.src = ev.target.result;
                 img.onload = async () => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    const maxDim = 800;
-                    let w = img.width, h = img.height;
-
-                    if (w > maxDim || h > maxDim) {
-                        if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
-                        else { w = Math.round((w * maxDim) / h); h = maxDim; }
-                    }
-
-                    canvas.width = w;
-                    canvas.height = h;
-                    ctx.drawImage(img, 0, 0, w, h);
-
-                    const base64Str = canvas.toDataURL('image/jpeg', 0.7);
-                    const encryptedImage = await SecurityEngine.encryptAES256(base64Str);
+                    canvas.width = 800; canvas.height = Math.round((img.height * 800) / img.width);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    const encryptedImage = await SecurityEngine.encryptAES256(canvas.toDataURL('image/jpeg', 0.7));
                     const currentUser = db.getSession();
-
-                    const msgObj = {
+                    await db.saveMessageToFirebase(this.currentRoomId, {
                         id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
                         senderId: currentUser.id,
                         senderName: currentUser.displayName || currentUser.username,
@@ -137,9 +103,7 @@ const chat = {
                         text: encryptedImage,
                         type: 'image',
                         timestamp: Date.now()
-                    };
-
-                    await db.saveMessageToFirebase(this.currentRoomId, msgObj);
+                    });
                 };
             };
             reader.readAsDataURL(file);
@@ -153,97 +117,55 @@ const chat = {
 
         const currentUser = db.getSession();
         const isMe = msg.senderId === currentUser.id;
-
-        let decryptedText = '';
-        if (msg.recalled) {
-            decryptedText = '[Tin nhắn đã bị thu hồi]';
-        } else {
-            decryptedText = await SecurityEngine.decryptAES256(msg.text);
-        }
+        const decryptedText = msg.recalled ? '[Tin nhắn đã bị thu hồi]' : await SecurityEngine.decryptAES256(msg.text);
         msg.decryptedText = decryptedText;
 
-        const existingEl = document.getElementById(msg.id);
-        if (existingEl) {
-            this.updateMessageUI(msg);
-            return;
+        if (document.getElementById(msg.id)) return this.updateMessageUI(msg);
+
+        let senderDisplayName = msg.senderName;
+        if (!isMe) {
+            senderDisplayName = db.getLocalNickname(msg.senderId, msg.senderName);
         }
 
         const msgDiv = document.createElement('div');
         msgDiv.id = msg.id;
         msgDiv.className = `flex gap-3 mb-4 ${isMe ? 'flex-row-reverse' : 'flex-row'} items-start group`;
 
-        // Avatar
-        let avatarHtml = '';
-        if (msg.senderAvatar && msg.senderAvatar.startsWith('data:image/')) {
-            avatarHtml = `<img src="${msg.senderAvatar}" class="w-8 h-8 rounded-full object-cover border border-cyan-500 shrink-0" alt="avatar">`;
-        } else {
-            avatarHtml = `<div class="w-8 h-8 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 text-xs shrink-0"><i class="${msg.senderAvatar || 'fa-solid fa-user'}"></i></div>`;
-        }
+        const avatarHtml = msg.senderAvatar && msg.senderAvatar.startsWith('data:image/')
+            ? `<img src="${msg.senderAvatar}" class="w-8 h-8 rounded-full object-cover border border-cyan-500 shrink-0">`
+            : `<div class="w-8 h-8 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 text-xs shrink-0"><i class="${msg.senderAvatar || 'fa-solid fa-user'}"></i></div>`;
 
-        // Reply Header
-        let replyHtml = '';
-        if (msg.replyTo) {
-            replyHtml = `
-                <div class="text-[10px] bg-black/30 border-l-2 border-cyan-400 pl-2 py-1 mb-1 rounded text-slate-300">
-                    <span class="font-semibold text-cyan-400">@${SecurityEngine.sanitizeHTML(msg.replyTo.senderName)}:</span> ${SecurityEngine.sanitizeHTML(msg.replyTo.previewText.substring(0, 40))}...
-                </div>
-            `;
-        }
-
-        // Content (Text/Image)
-        let contentHtml = '';
-        if (msg.type === 'image' && !msg.recalled) {
-            contentHtml = `<img src="${decryptedText}" class="max-w-xs sm:max-w-sm rounded-lg border border-slate-700 shadow-md cursor-pointer hover:opacity-90" onclick="window.open('${decryptedText}')" alt="image">`;
-        } else {
-            contentHtml = `<p class="text-sm whitespace-pre-wrap break-words ${msg.recalled ? 'italic text-slate-400' : ''}">${SecurityEngine.sanitizeHTML(decryptedText)}</p>`;
-        }
-
-        // Reactions list
-        const reactionsHtml = this.renderReactionsList(msg.reactions);
-
-        const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const replyHtml = msg.replyTo ? `<div class="text-[10px] bg-black/30 border-l-2 border-cyan-400 pl-2 py-1 mb-1 rounded text-slate-300"><span class="font-semibold text-cyan-400">@${SecurityEngine.sanitizeHTML(msg.replyTo.senderName)}:</span> ${SecurityEngine.sanitizeHTML(msg.replyTo.previewText.substring(0, 30))}...</div>` : '';
+        const contentHtml = msg.type === 'image' && !msg.recalled ? `<img src="${decryptedText}" class="max-w-xs rounded-lg border border-slate-700 shadow-md cursor-pointer" onclick="window.open('${decryptedText}')">` : `<p class="text-sm whitespace-pre-wrap break-words ${msg.recalled ? 'italic text-slate-400' : ''}">${SecurityEngine.sanitizeHTML(decryptedText)}</p>`;
 
         msgDiv.innerHTML = `
             ${avatarHtml}
             <div class="max-w-[75%] space-y-1">
                 <div class="flex items-center gap-2 ${isMe ? 'justify-end' : 'justify-start'}">
-                    <span class="text-[11px] font-semibold text-slate-400">${SecurityEngine.sanitizeHTML(msg.senderName)}</span>
-                    <span class="text-[9px] text-slate-500">${timeStr}</span>
+                    <span class="text-[11px] font-semibold text-slate-400">${SecurityEngine.sanitizeHTML(senderDisplayName)}</span>
+                    <span class="text-[9px] text-slate-500">${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
-                
                 <div class="relative group/bubble">
                     <div class="p-3 rounded-2xl ${isMe ? 'bg-cyan-600 text-white rounded-tr-none' : 'bg-slate-800 text-slate-100 border border-slate-700 rounded-tl-none'} shadow-md">
-                        ${replyHtml}
-                        ${contentHtml}
+                        ${replyHtml} ${contentHtml}
                     </div>
-
-                    <!-- Action Bar (Reply, Reaction, Pin, Recall) -->
                     <div class="absolute top-1/2 -translate-y-1/2 ${isMe ? '-left-28' : '-right-28'} hidden group-hover/bubble:flex items-center gap-1 bg-slate-800 border border-slate-700 p-1 rounded-lg shadow-lg z-10">
-                        <button onclick="chat.setReplyTarget('${msg.id}', '${SecurityEngine.sanitizeHTML(msg.senderName)}', '${encodeURIComponent(decryptedText)}')" class="p-1 hover:text-cyan-400 text-xs text-slate-300" title="Trả lời"><i class="fa-solid fa-reply"></i></button>
-                        <button onclick="chat.toggleEmojiMenu('${msg.id}')" class="p-1 hover:text-yellow-400 text-xs text-slate-300" title="Cảm xúc"><i class="fa-solid fa-face-smile"></i></button>
-                        <button onclick="chat.pinMsg('${msg.id}')" class="p-1 hover:text-emerald-400 text-xs text-slate-300" title="Ghim"><i class="fa-solid fa-thumbtack"></i></button>
-                        ${isMe && !msg.recalled ? `<button onclick="chat.recallMsg('${msg.id}')" class="p-1 hover:text-rose-400 text-xs text-slate-300" title="Thu hồi"><i class="fa-solid fa-rotate-left"></i></button>` : ''}
+                        <button onclick="chat.setReplyTarget('${msg.id}', '${SecurityEngine.sanitizeHTML(senderDisplayName)}', '${encodeURIComponent(decryptedText)}')" class="p-1 hover:text-cyan-400 text-xs text-slate-300"><i class="fa-solid fa-reply"></i></button>
+                        <button onclick="chat.toggleEmojiMenu('${msg.id}')" class="p-1 hover:text-yellow-400 text-xs text-slate-300"><i class="fa-solid fa-face-smile"></i></button>
+                        <button onclick="chat.pinMsg('${msg.id}')" class="p-1 hover:text-emerald-400 text-xs text-slate-300"><i class="fa-solid fa-thumbtack"></i></button>
+                        ${isMe && !msg.recalled ? `<button onclick="chat.recallMsg('${msg.id}')" class="p-1 hover:text-rose-400 text-xs text-slate-300"><i class="fa-solid fa-rotate-left"></i></button>` : ''}
                     </div>
-
-                    <!-- Emoji Popover Menu -->
                     <div id="emoji-popover-${msg.id}" class="hidden absolute top-full mt-1 ${isMe ? 'right-0' : 'left-0'} bg-slate-800 border border-slate-700 p-1.5 rounded-xl shadow-2xl flex gap-2 z-20">
-                        <span onclick="chat.addReaction('${msg.id}', '👍')" class="cursor-pointer hover:scale-125 transition">👍</span>
-                        <span onclick="chat.addReaction('${msg.id}', '❤️')" class="cursor-pointer hover:scale-125 transition">❤️</span>
-                        <span onclick="chat.addReaction('${msg.id}', '😂')" class="cursor-pointer hover:scale-125 transition">😂</span>
-                        <span onclick="chat.addReaction('${msg.id}', '😮')" class="cursor-pointer hover:scale-125 transition">😮</span>
-                        <span onclick="chat.addReaction('${msg.id}', '😢')" class="cursor-pointer hover:scale-125 transition">😢</span>
-                        <span onclick="chat.addReaction('${msg.id}', '🔥')" class="cursor-pointer hover:scale-125 transition">🔥</span>
+                        <span onclick="chat.addReaction('${msg.id}', '👍')" class="cursor-pointer">👍</span>
+                        <span onclick="chat.addReaction('${msg.id}', '❤️')" class="cursor-pointer">❤️</span>
+                        <span onclick="chat.addReaction('${msg.id}', '😂')" class="cursor-pointer">😂</span>
                     </div>
                 </div>
-
-                <div id="reactions-box-${msg.id}">${reactionsHtml}</div>
+                <div id="reactions-box-${msg.id}">${this.renderReactionsList(msg.reactions)}</div>
             </div>
         `;
-
         container.appendChild(msgDiv);
         container.scrollTop = container.scrollHeight;
-
-        // Phát âm thanh thông báo nếu tin nhắn đến từ người khác
         if (!isMe) this.playNotificationSound();
     },
 
@@ -251,201 +173,154 @@ const chat = {
         if (!reactionsObj) return '';
         const counts = {};
         Object.values(reactionsObj).forEach(e => counts[e] = (counts[e] || 0) + 1);
-        
-        const badges = Object.entries(counts).map(([emoji, count]) => `
-            <span class="inline-flex items-center gap-0.5 bg-slate-800 border border-slate-700 text-[10px] px-1.5 py-0.5 rounded-full text-slate-200">
-                <span>${emoji}</span> <span class="font-bold text-cyan-400">${count}</span>
-            </span>
-        `).join(' ');
-
-        return `<div class="flex flex-wrap gap-1 mt-1">${badges}</div>`;
+        return `<div class="flex flex-wrap gap-1 mt-1">${Object.entries(counts).map(([em, cnt]) => `<span class="bg-slate-800 border border-slate-700 text-[10px] px-1.5 py-0.5 rounded-full text-slate-200">${em} <strong class="text-cyan-400">${cnt}</strong></span>`).join('')}</div>`;
     },
 
     updateMessageUI(msg) {
-        const msgEl = document.getElementById(msg.id);
-        if (!msgEl) return;
-        const reactionsBox = document.getElementById(`reactions-box-${msg.id}`);
-        if (reactionsBox) {
-            reactionsBox.innerHTML = this.renderReactionsList(msg.reactions);
-        }
+        const box = document.getElementById(`reactions-box-${msg.id}`);
+        if (box) box.innerHTML = this.renderReactionsList(msg.reactions);
     },
 
-    // Trả lời tin nhắn
     setReplyTarget(msgId, senderName, encodedText) {
-        const decodedText = decodeURIComponent(encodedText);
-        this.replyingMessage = { id: msgId, senderName, decryptedText: decodedText };
-
-        let replyBar = document.getElementById('reply-preview-bar');
-        if (!replyBar) {
-            replyBar = document.createElement('div');
-            replyBar.id = 'reply-preview-bar';
-            replyBar.className = 'bg-slate-900 border-b border-slate-700 p-2 text-xs flex justify-between items-center text-slate-300';
-            const chatForm = document.querySelector('form');
-            if (chatForm) chatForm.parentNode.insertBefore(replyBar, chatForm);
+        const decoded = decodeURIComponent(encodedText);
+        this.replyingMessage = { id: msgId, senderName, decryptedText: decoded };
+        let bar = document.getElementById('reply-preview-bar');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'reply-preview-bar';
+            bar.className = 'bg-slate-900 border-b border-slate-700 p-2 text-xs flex justify-between items-center text-slate-300';
+            document.querySelector('form').parentNode.insertBefore(bar, document.querySelector('form'));
         }
-
-        replyBar.innerHTML = `
-            <div class="flex items-center gap-2 truncate">
-                <i class="fa-solid fa-reply text-cyan-400"></i>
-                <span>Đang trả lời <strong class="text-cyan-400">@${senderName}</strong>: "${SecurityEngine.sanitizeHTML(decodedText.substring(0, 30))}..."</span>
-            </div>
-            <button onclick="chat.clearReplyPreview()" class="text-rose-400 hover:text-rose-300 font-bold ml-2"><i class="fa-solid fa-xmark"></i></button>
-        `;
+        bar.innerHTML = `<span class="truncate">Trả lời <strong class="text-cyan-400">@${senderName}</strong>: "${decoded.substring(0, 30)}..."</span><button onclick="chat.clearReplyPreview()" class="text-rose-400"><i class="fa-solid fa-xmark"></i></button>`;
     },
 
     clearReplyPreview() {
         this.replyingMessage = null;
-        const replyBar = document.getElementById('reply-preview-bar');
-        if (replyBar) replyBar.remove();
+        const bar = document.getElementById('reply-preview-bar');
+        if (bar) bar.remove();
     },
 
-    // Emoji Popover
-    toggleEmojiMenu(msgId) {
-        const menu = document.getElementById(`emoji-popover-${msgId}`);
-        if (menu) menu.classList.toggle('hidden');
-    },
+    toggleEmojiMenu(msgId) { document.getElementById(`emoji-popover-${msgId}`).classList.toggle('hidden'); },
+    async addReaction(msgId, emoji) { await db.toggleReaction(this.currentRoomId, msgId, db.getSession().id, emoji); this.toggleEmojiMenu(msgId); },
+    async recallMsg(msgId) { if (confirm("Thu hồi tin nhắn?")) await db.recallMessage(this.currentRoomId, msgId); },
+    async pinMsg(msgId) { await db.pinMessage(this.currentRoomId, msgId, true); },
 
-    async addReaction(msgId, emoji) {
-        const currentUser = db.getSession();
-        await db.toggleReaction(this.currentRoomId, msgId, currentUser.id, emoji);
-        this.toggleEmojiMenu(msgId);
-    },
-
-    // Thu hồi
-    async recallMsg(msgId) {
-        if (confirm("Bạn có chắc chắn muốn thu hồi tin nhắn này?")) {
-            await db.recallMessage(this.currentRoomId, msgId);
+    renderPinnedBar(pinned) {
+        let bar = document.getElementById('pinned-message-bar');
+        if (!pinned) { if (bar) bar.remove(); return; }
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'pinned-message-bar';
+            bar.className = 'bg-slate-800 border-b border-slate-700 p-2 px-4 text-xs flex justify-between items-center z-10';
+            document.getElementById('chat-messages').parentNode.insertBefore(bar, document.getElementById('chat-messages'));
         }
+        bar.innerHTML = `<span class="text-cyan-400 truncate"><i class="fa-solid fa-thumbtack text-amber-400"></i> Ghim: ${SecurityEngine.sanitizeHTML(pinned.text.substring(0, 35))}</span><button onclick="db.pinMessage('${this.currentRoomId}', null, false)" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button>`;
     },
 
-    // Ghim
-    async pinMsg(msgId) {
-        await db.pinMessage(this.currentRoomId, msgId, true);
-    },
-
-    renderPinnedBar(pinnedMsg) {
-        let pinnedBar = document.getElementById('pinned-message-bar');
-        if (!pinnedMsg) {
-            if (pinnedBar) pinnedBar.remove();
-            return;
-        }
-
-        if (!pinnedBar) {
-            pinnedBar = document.createElement('div');
-            pinnedBar.id = 'pinned-message-bar';
-            pinnedBar.className = 'bg-slate-800/90 backdrop-blur border-b border-slate-700 p-2.5 px-4 text-xs flex justify-between items-center z-10';
-            const messagesContainer = document.getElementById('chat-messages');
-            if (messagesContainer) messagesContainer.parentNode.insertBefore(pinnedBar, messagesContainer);
-        }
-
-        pinnedBar.innerHTML = `
-            <div class="flex items-center gap-2 text-cyan-400 font-semibold truncate">
-                <i class="fa-solid fa-thumbtack text-amber-400 animate-bounce"></i>
-                <span>Tin nhắn ghim (@${SecurityEngine.sanitizeHTML(pinnedMsg.senderName)}):</span>
-                <span class="text-slate-200 font-normal truncate">${SecurityEngine.sanitizeHTML(pinnedMsg.text.substring(0, 45))}</span>
-            </div>
-            <button onclick="db.pinMessage('${this.currentRoomId}', null, false)" class="text-slate-400 hover:text-rose-400 ml-2"><i class="fa-solid fa-xmark"></i></button>
-        `;
-    },
-
-    // Đang gõ phím (Typing)
     handleTypingEvent() {
-        const currentUser = db.getSession();
-        db.setTypingStatus(this.currentRoomId, currentUser.id, currentUser.username, true);
-
+        const u = db.getSession();
+        db.setTypingStatus(this.currentRoomId, u.id, u.username, true);
         clearTimeout(this.typingTimeout);
-        this.typingTimeout = setTimeout(() => {
-            db.setTypingStatus(this.currentRoomId, currentUser.id, currentUser.username, false);
-        }, 3000);
+        this.typingTimeout = setTimeout(() => db.setTypingStatus(this.currentRoomId, u.id, u.username, false), 3000);
     },
 
     renderTypingIndicator(typers) {
-        let indicator = document.getElementById('typing-indicator-bar');
-        if (typers.length === 0) {
-            if (indicator) indicator.remove();
-            return;
+        let ind = document.getElementById('typing-indicator-bar');
+        if (typers.length === 0) { if (ind) ind.remove(); return; }
+        if (!ind) {
+            ind = document.createElement('div');
+            ind.id = 'typing-indicator-bar';
+            ind.className = 'text-[11px] text-cyan-400 italic px-4 py-1 bg-slate-900 border-t border-slate-800';
+            document.querySelector('form').parentNode.insertBefore(ind, document.querySelector('form'));
         }
-
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = 'typing-indicator-bar';
-            indicator.className = 'text-[11px] text-cyan-400 italic px-4 py-1 bg-slate-900 border-t border-slate-800 flex items-center gap-1';
-            const chatForm = document.querySelector('form');
-            if (chatForm) chatForm.parentNode.insertBefore(indicator, chatForm);
-        }
-
-        indicator.innerHTML = `<i class="fa-solid fa-pen-nib animate-pulse"></i> ${typers.join(', ')} đang soạn tin...`;
+        ind.innerHTML = `<i class="fa-solid fa-pen-nib animate-pulse"></i> ${typers.join(', ')} đang soạn tin...`;
     },
 
-    // Phát âm thanh Web Audio API
     playNotificationSound() {
         try {
             if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = this.audioCtx.createOscillator();
             const gain = this.audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(587.33, this.audioCtx.currentTime); // D5
-            osc.frequency.exponentialRampToValueAtTime(880, this.audioCtx.currentTime + 0.15); // A5
+            osc.frequency.setValueAtTime(587.33, this.audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(880, this.audioCtx.currentTime + 0.15);
             gain.gain.setValueAtTime(0.08, this.audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.2);
-            osc.connect(gain);
-            gain.connect(this.audioCtx.destination);
-            osc.start();
-            osc.stop(this.audioCtx.currentTime + 0.2);
-        } catch(e) {}
+            osc.connect(gain); gain.connect(this.audioCtx.destination);
+            osc.start(); osc.stop(this.audioCtx.currentTime + 0.2);
+        } catch(e){}
     },
 
-    // Tìm kiếm tin nhắn
-    searchMessages(query) {
-        const keyword = query.toLowerCase().trim();
-        const msgDivs = document.querySelectorAll('#chat-messages > div');
-        msgDivs.forEach(div => {
-            const p = div.querySelector('p');
-            if (p) {
-                const text = p.innerText.toLowerCase();
-                div.style.display = text.includes(keyword) ? 'flex' : 'none';
-            }
+    searchMessages(q) {
+        const kw = q.toLowerCase().trim();
+        document.querySelectorAll('#chat-messages > div').forEach(d => {
+            const p = d.querySelector('p');
+            if (p) d.style.display = p.innerText.toLowerCase().includes(kw) ? 'flex' : 'none';
         });
     },
 
-    // Đổi màu chủ đạo (Theme Accent)
-    setTheme(themeName) {
-        sessionStorage.setItem('chidoi_theme', themeName);
-        this.applySavedTheme();
-    },
-
-    applySavedTheme() {
-        const theme = sessionStorage.getItem('chidoi_theme') || 'cyan';
-        document.documentElement.setAttribute('data-theme', theme);
-    },
+    setTheme(t) { sessionStorage.setItem('chidoi_theme', t); this.applySavedTheme(); },
+    applySavedTheme() { document.documentElement.setAttribute('data-theme', sessionStorage.getItem('chidoi_theme') || 'cyan'); },
 
     renderFriendsList(users, currentUser) {
         const container = document.getElementById('friends-list');
         const countEl = document.getElementById('friends-count');
         if (!container) return;
-
         container.innerHTML = '';
         if (countEl) countEl.innerText = users.length;
 
         users.forEach(u => {
             const isMe = u.id === currentUser.id;
-            let avatarHtml = u.icon && u.icon.startsWith('data:image/') 
-                ? `<img src="${u.icon}" class="w-8 h-8 rounded-full object-cover border border-cyan-500" alt="avatar">`
-                : `<div class="w-8 h-8 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 text-xs"><i class="${u.icon || 'fa-solid fa-user'}"></i></div>`;
+            const nick = db.getLocalNickname(u.id, u.displayName || u.username);
+            const avatar = u.icon && u.icon.startsWith('data:image/') ? `<img src="${u.icon}" class="w-8 h-8 rounded-full object-cover border border-cyan-500">` : `<div class="w-8 h-8 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 text-xs"><i class="${u.icon || 'fa-solid fa-user'}"></i></div>`;
 
             const item = document.createElement('div');
             item.className = 'flex items-center gap-3 p-2 rounded-xl transition hover:bg-slate-700/50';
-            item.innerHTML = `
-                <div class="relative shrink-0">
-                    ${avatarHtml}
-                    <span class="w-2.5 h-2.5 rounded-full ${u.online ? 'bg-emerald-400' : 'bg-slate-500'} absolute bottom-0 right-0 border-2 border-slate-800"></span>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="text-xs font-semibold text-slate-200 truncate">${SecurityEngine.sanitizeHTML(u.displayName || u.username)} ${isMe ? '(Bạn)' : ''}</div>
-                    <div class="text-[10px] ${u.online ? 'text-emerald-400' : 'text-slate-500'}">${u.online ? 'Online' : 'Offline'}</div>
-                </div>
-            `;
+            item.innerHTML = `<div class="relative shrink-0">${avatar}<span class="w-2.5 h-2.5 rounded-full ${u.online ? 'bg-emerald-400' : 'bg-slate-500'} absolute bottom-0 right-0 border-2 border-slate-800"></span></div><div class="flex-1 min-w-0"><div class="text-xs font-semibold text-slate-200 truncate">${SecurityEngine.sanitizeHTML(nick)} ${isMe ? '(Bạn)' : ''}</div><div class="text-[10px] ${u.online ? 'text-emerald-400' : 'text-slate-500'}">${u.online ? 'Online' : 'Offline'}</div></div>`;
             container.appendChild(item);
+        });
+    },
+
+    // Biệt danh & Người yêu Extensions
+    promptChangeNickname(targetUserId, defaultName) {
+        const current = db.getLocalNickname(targetUserId, defaultName);
+        const name = prompt(`Nhập biệt danh cho @${defaultName}:`, current);
+        if (name !== null) {
+            db.setLocalNickname(targetUserId, name.trim() || defaultName);
+            alert("Đã cập nhật biệt danh!");
+            location.reload();
+        }
+    },
+
+    async proposeLove(targetUserId, targetName) {
+        const u = db.getSession();
+        if (confirm(`Gửi lời mời làm người yêu đến @${targetName}?`)) {
+            await db.sendLoveProposal(u, targetUserId);
+            alert("Đã gửi lời mời!");
+        }
+    },
+
+    initLoveStatusListener(targetUserId) {
+        const u = db.getSession();
+        if (!u) return;
+        db.listenRelationship(u.id, targetUserId, (rel) => {
+            let bar = document.getElementById('love-status-bar');
+            if (!rel || rel.status === 'rejected') { if (bar) bar.remove(); return; }
+            if (!bar) {
+                bar = document.createElement('div');
+                bar.id = 'love-status-bar';
+                bar.className = 'bg-rose-950/90 border-b border-rose-800 p-2 px-4 text-xs flex justify-between items-center text-rose-300 z-10';
+                document.getElementById('chat-messages').parentNode.insertBefore(bar, document.getElementById('chat-messages'));
+            }
+            if (rel.status === 'pending') {
+                if (rel.fromId === u.id) {
+                    bar.innerHTML = `<span><i class="fa-solid fa-heart text-rose-400 animate-pulse"></i> Đã gửi lời mời Người yêu, chờ phản hồi...</span>`;
+                } else {
+                    bar.innerHTML = `<span><i class="fa-solid fa-heart text-rose-400"></i> @${rel.fromName} muốn làm Người yêu của bạn!</span><div class="space-x-1"><button onclick="db.respondLoveProposal('${rel.id}', 'accepted')" class="bg-rose-600 text-white px-2 py-0.5 rounded">Đồng ý ❤️</button><button onclick="db.respondLoveProposal('${rel.id}', 'rejected')" class="bg-slate-700 text-slate-300 px-2 py-0.5 rounded">Từ chối</button></div>`;
+                }
+            } else if (rel.status === 'accepted') {
+                bar.innerHTML = `<span class="mx-auto font-semibold text-rose-400"><i class="fa-solid fa-heart text-rose-500 animate-pulse"></i> Đang trong mối quan hệ Người yêu chính thức 💕</span>`;
+            }
         });
     }
 };
+        
