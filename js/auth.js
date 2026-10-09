@@ -3,6 +3,45 @@
  */
 const auth = {
     selectedBase64Image: null,
+    regSelectedBase64Image: null,
+
+    // Tải và nén ảnh đại diện trong màn hình Đăng Ký
+    handleRegFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            alert('Vui lòng chọn tệp hình ảnh!');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 128;
+                canvas.height = 128;
+
+                const minSide = Math.min(img.width, img.height);
+                const sx = (img.width - minSide) / 2;
+                const sy = (img.height - minSide) / 2;
+
+                ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, 128, 128);
+                
+                const base64Img = canvas.toDataURL('image/png');
+                this.regSelectedBase64Image = base64Img;
+
+                const box = document.getElementById('reg-avatar-preview-box');
+                if (box) {
+                    box.innerHTML = `<img src="${base64Img}" class="w-full h-full object-cover rounded-full" alt="Avatar">`;
+                }
+            };
+        };
+        reader.readAsDataURL(file);
+    },
 
     async handleRegister(e) {
         e.preventDefault();
@@ -13,7 +52,7 @@ const auth = {
 
         const username = document.getElementById('reg-username').value.trim();
         const email = document.getElementById('reg-email').value.trim();
-        const phone = document.getElementById('reg-phone').value.trim();
+        const phone = document.getElementById('reg-phone').value.trim() || 'Chưa cập nhật';
         const password = document.getElementById('reg-password').value;
         const confirmPassword = document.getElementById('reg-confirm-password').value;
 
@@ -41,6 +80,7 @@ const auth = {
         }
 
         const passwordHash = await SecurityEngine.hashPassword(password);
+        const finalAvatar = this.regSelectedBase64Image || 'fa-solid fa-user-ninja';
 
         const newUser = {
             id: 'usr_' + Date.now() + '_' + Math.floor(Math.random() * 10000),
@@ -49,7 +89,7 @@ const auth = {
             email,
             phone,
             displayName: username,
-            icon: 'fa-solid fa-user-ninja'
+            icon: finalAvatar
         };
 
         const success = await db.saveUserToFirebase(newUser);
@@ -158,7 +198,7 @@ const auth = {
         const newDisplayName = document.getElementById('prof-display-name').value.trim();
         const newUsername = document.getElementById('prof-username').value.trim();
         const newEmail = document.getElementById('prof-email').value.trim();
-        const newPhone = document.getElementById('prof-phone').value.trim();
+        const newPhone = document.getElementById('prof-phone').value.trim() || 'Chưa cập nhật';
         const newPassword = document.getElementById('prof-new-password').value;
 
         const users = await db.getUsersOnce();
@@ -217,4 +257,3 @@ const auth = {
         }
     }
 };
-        
