@@ -20,6 +20,7 @@ if (typeof firebase !== 'undefined' && !firebase.apps.length) {
 const rtdb = (typeof firebase !== 'undefined') ? firebase.database() : null;
 
 const db = {
+    // 1. Quản lý Tài khoản trên Firebase Realtime Database
     async saveUserToFirebase(user) {
         try {
             if (!rtdb) return false;
@@ -53,6 +54,7 @@ const db = {
         });
     },
 
+    // 2. Quản lý Session phiên làm việc cục bộ
     getSession() {
         try {
             const data = localStorage.getItem('chidoi_session');
@@ -76,21 +78,28 @@ const db = {
         localStorage.removeItem('chidoi_session');
     },
 
-    async saveMessageToFirebase(msg) {
+    // 3. Quản lý Tin nhắn (Phân tách theo roomId: 'group' hoặc 'dm_userA_userB')
+    async saveMessageToFirebase(roomId, msg) {
         try {
             if (!rtdb) return;
-            await rtdb.ref('messages/' + msg.id).set(msg);
+            await rtdb.ref(`messages/${roomId}/${msg.id}`).set(msg);
         } catch (e) {
             console.error("Lỗi gửi tin nhắn Firebase:", e);
         }
     },
 
-    listenMessages(callback) {
+    listenMessages(roomId, callback) {
         if (!rtdb) return;
-        rtdb.ref('messages').on('child_added', (snapshot) => {
+        rtdb.ref(`messages/${roomId}`).on('child_added', (snapshot) => {
             const msg = snapshot.val();
             if (msg) callback(msg);
         });
+    },
+
+    stopListenMessages(roomId) {
+        if (rtdb) {
+            rtdb.ref(`messages/${roomId}`).off();
+        }
     },
 
     clearAllData() {
