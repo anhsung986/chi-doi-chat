@@ -1,6 +1,6 @@
 /**
  * Authentication & Full Profile Manager
- * Đã bổ sung userId cố định để người dùng thoải mái đổi Tên đăng nhập mà không bị đổi/mất tài khoản.
+ * Đã bỏ ô ghi tên icon, chỉ nhận chọn tệp ảnh trực tiếp từ thiết bị.
  */
 const auth = {
     selectedBase64Image: null,
@@ -31,7 +31,6 @@ const auth = {
 
         const passwordHash = await SecurityEngine.hashPassword(password);
 
-        // Tạo ID duy nhất không bao giờ thay đổi cho tài khoản
         const newUser = {
             id: 'usr_' + Date.now() + '_' + Math.floor(Math.random() * 10000),
             username,
@@ -68,7 +67,6 @@ const auth = {
             return;
         }
 
-        // Tự động cấp ID nếu là tài khoản cũ chưa có ID
         if (!user.id) {
             user.id = 'usr_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
             db.saveUsers(users);
@@ -83,6 +81,7 @@ const auth = {
         window.location.href = 'login.html';
     },
 
+    // Chọn ảnh từ điện thoại / máy tính & nén tự động
     handleFileSelect(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -110,30 +109,24 @@ const auth = {
                 
                 this.selectedBase64Image = canvas.toDataURL('image/png');
                 this.renderAvatarPreview(this.selectedBase64Image);
-                document.getElementById('prof-icon-input').value = '';
             };
         };
         reader.readAsDataURL(file);
     },
 
+    // Hiển thị ảnh xem trước
     renderAvatarPreview(avatarValue) {
         const box = document.getElementById('prof-avatar-preview-box');
         if (!box) return;
 
         if (avatarValue && avatarValue.startsWith('data:image/')) {
-            box.innerHTML = `<img src="${avatarValue}" class="w-full h-full object-cover" alt="Avatar">`;
+            box.innerHTML = `<img src="${avatarValue}" class="w-full h-full object-cover rounded-full" alt="Avatar">`;
         } else {
             box.innerHTML = `<i class="${avatarValue || 'fa-solid fa-user-ninja'}"></i>`;
-            document.getElementById('prof-icon-input').value = avatarValue.startsWith('data:image/') ? '' : avatarValue;
         }
     },
 
-    previewIcon(iconClass) {
-        this.selectedBase64Image = null;
-        this.renderAvatarPreview(SecurityEngine.sanitizeHTML(iconClass) || 'fa-solid fa-user-ninja');
-    },
-
-    // CẬP NHẬT HỒ SƠ DỰA TRÊN USER ID (KHÔNG BỊ TẠO HOẶC ĐỔI SANG TÀI KHOẢN MỚI)
+    // Lưu thông tin hồ sơ
     async updateFullProfile(e) {
         e.preventDefault();
         const msgEl = document.getElementById('prof-msg');
@@ -146,26 +139,22 @@ const auth = {
         const newUsername = document.getElementById('prof-username').value.trim();
         const newEmail = document.getElementById('prof-email').value.trim();
         const newPhone = document.getElementById('prof-phone').value.trim();
-        const iconInput = document.getElementById('prof-icon-input').value.trim();
         const newPassword = document.getElementById('prof-new-password').value;
 
+        // Dùng ảnh vừa chọn từ máy, nếu không có thì giữ ảnh cũ
         let finalAvatar = currentUser.icon || 'fa-solid fa-user-ninja';
         if (this.selectedBase64Image) {
             finalAvatar = this.selectedBase64Image;
-        } else if (iconInput !== '') {
-            finalAvatar = SecurityEngine.sanitizeHTML(iconInput);
         }
 
         const users = db.getUsers();
 
-        // 1. Kiểm tra nếu Tên đăng nhập mới trùng với tài khoản CỦA NGƯỜI KHÁC
         const isDuplicate = users.some(u => u.username === newUsername && u.id !== currentUser.id);
         if (isDuplicate) {
             this.showProfileMessage("Tên đăng nhập này đã được người khác sử dụng!", "error");
             return;
         }
 
-        // 2. Xử lý đổi Mật khẩu nếu có nhập
         let updatedPasswordHash = currentUser.passwordHash;
         if (newPassword && newPassword.trim() !== '') {
             const secCheck = SecurityEngine.validatePasswordLevel5(newPassword);
@@ -176,9 +165,8 @@ const auth = {
             updatedPasswordHash = await SecurityEngine.hashPassword(newPassword);
         }
 
-        // 3. Giữ nguyên ID định danh cũ, cập nhật các thông tin mới
         const updatedUser = {
-            id: currentUser.id || ('usr_' + Date.now()), // Bảo toàn ID
+            id: currentUser.id || ('usr_' + Date.now()),
             username: SecurityEngine.sanitizeHTML(newUsername),
             passwordHash: updatedPasswordHash,
             email: SecurityEngine.sanitizeHTML(newEmail),
@@ -187,7 +175,6 @@ const auth = {
             icon: finalAvatar
         };
 
-        // 4. Tìm chính xác tài khoản cũ theo ID để đè dữ liệu
         const userIndex = users.findIndex(u => u.id === currentUser.id || u.username === currentUser.username);
         if (userIndex !== -1) {
             users[userIndex] = updatedUser;
@@ -195,12 +182,11 @@ const auth = {
             users.push(updatedUser);
         }
 
-        // 5. Lưu lại danh sách và cập nhật phiên làm việc
         db.saveUsers(users);
         db.setSession(updatedUser);
 
         document.getElementById('prof-new-password').value = '';
-        this.showProfileMessage("Đã đổi thông tin thành công! Tài khoản của bạn được giữ nguyên.", "success");
+        this.showProfileMessage("Đã cập nhật ảnh đại diện và thông tin cá nhân thành công!", "success");
     },
 
     showProfileMessage(msg, type) {
@@ -215,3 +201,4 @@ const auth = {
         }
     }
 };
+            
