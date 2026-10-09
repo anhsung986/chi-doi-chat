@@ -2,14 +2,16 @@
  * Security Engine - SHA-256 Hash, AES-GCM 256-bit Encryption & XSS Sanitization
  */
 const SecurityEngine = {
+    // 1. Mã hóa mật khẩu chuẩn SHA-256 (Khớp chính xác với Firebase)
     async hashPassword(password) {
         const encoder = new TextEncoder();
-        const data = encoder.encode(password + "ChiDoiPhoneChat_Salt_2026");
+        const data = encoder.encode(password);
         const hashBuffer = await crypto.subtle.digest('SHA-256', data);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     },
 
+    // 2. Kiểm tra độ mạnh mật khẩu Cấp 5
     validatePasswordLevel5(password) {
         if (!password || password.length < 12) {
             return { valid: false, msg: "Mật khẩu cấp 5 yêu cầu tối thiểu 12 ký tự!" };
@@ -25,6 +27,7 @@ const SecurityEngine = {
         return { valid: true };
     },
 
+    // 3. XSS Sanitization chống tấn công mã độc
     sanitizeHTML(str) {
         if (!str) return '';
         return String(str)
@@ -35,6 +38,7 @@ const SecurityEngine = {
             .replace(/'/g, '&#039;');
     },
 
+    // 4. Mã hóa AES-256-GCM cho tin nhắn & ảnh
     async getAESKey() {
         const secretKeyMaterial = "ChiDoiPhoneChat_Secret_Encryption_Key_2026";
         const enc = new TextEncoder();
@@ -108,3 +112,4 @@ const SecurityEngine = {
         }
     }
 };
+    
