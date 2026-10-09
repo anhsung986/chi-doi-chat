@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Group | CHI DOI CHAT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS Fallback bảo đảm hiển thị màu sắc -->
+    <style>
+        html, body { background-color: #0f172a !important; color: #f8fafc !important; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; }
+        .bg-slate-900 { background-color: #0f172a !important; }
+        .bg-slate-800 { background-color: #1e293b !important; }
+        .bg-cyan-600 { background-color: #0891b2 !important; }
+        .bg-cyan-950 { background-color: #083344 !important; }
+        .text-cyan-400 { color: #22d3ee !important; }
+        .text-emerald-400 { color: #34d399 !important; }
+        .text-slate-100 { color: #f8fafc !important; }
+        .text-slate-200 { color: #e2e8f0 !important; }
+        .text-slate-400 { color: #94a3b8 !important; }
+        .border-slate-700 { border-color: #334155 !important; }
+        input[type="text"] {
+            background-color: #0f172a !important; color: #ffffff !important; border: 1px solid #334155 !important; border-radius: 0.5rem;
+        }
+        input:focus { border-color: #06b6d4 !important; outline: none; }
+        button { cursor: pointer; }
+        a { text-decoration: none; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-shield-cat text-cyan-400 text-2xl"></i>
+                <span class="font-bold text-xl text-cyan-400">CHI DOI CHAT</span>
+            </div>
+            <nav class="flex items-center space-x-5">
+                <a href="chat-group.html" class="text-cyan-400 font-medium text-sm flex items-center gap-1"><i class="fa-solid fa-comments"></i> Chat Group</a>
+                <a href="profile.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-user"></i> Profile</a>
+                <a href="settings.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-gear"></i> Settings</a>
+                <button onclick="auth.logout()" class="text-rose-400 hover:text-rose-300 text-sm ml-2"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-5rem)]">
+        
+        <!-- SIDEBAR DANH SÁCH BẠN BÈ -->
+        <aside class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-60 md:h-full">
+            <div class="p-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-users text-cyan-400"></i>
+                    <h3 class="font-bold text-sm text-slate-100">Danh Sách Bạn Bè</h3>
+                </div>
+                <span id="friends-count" class="text-xs bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-800 font-semibold">0</span>
+            </div>
+
+            <div class="p-2 bg-slate-900 border-b border-slate-700">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+                    <input type="text" id="search-friends" oninput="chat.filterFriends(this.value)" placeholder="Tìm tên hoặc username..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white outline-none">
+                </div>
+            </div>
+
+            <div id="friends-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
+        </aside>
+
+        <!-- KHUNG CHAT CHÍNH -->
+        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full">
+            <div class="bg-slate-800 p-4 border-b border-slate-700 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-lg text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-comments"></i> CHI DOI CHAT ROOM
+                    </h3>
+                    <p class="text-xs text-slate-400">Đồng bộ Firebase Realtime DB & Mã Hóa AES-GCM 256-bit</p>
+                </div>
+                <div class="text-xs bg-slate-900 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Real-time Sync
+                </div>
+            </div>
+
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-900"></div>
+
+            <form onsubmit="chat.sendMessage(event)" class="p-3 bg-slate-800 border-t border-slate-700 flex gap-2">
+                <input type="text" id="chat-input" placeholder="Nhập tin nhắn bảo mật AES-256..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none">
+                <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-lg font-medium transition flex items-center gap-2 shadow-md">
+                    <span>Gửi</span>
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </section>
+
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="js/crypto.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/chat.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = db.getSession();
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                chat.initRealtimeListeners();
+            }
+        });
+    </script>
+</body>
+</html>
