@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        html, body { background-color: #0f172a !important; color: #f8fafc !important; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; }
+        html, body { background-color: #0f172a !important; color: #f8fafc !important; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; height: 100%; overflow: hidden; }
         .bg-slate-900 { background-color: #0f172a !important; }
         .bg-slate-800 { background-color: #1e293b !important; }
         .bg-cyan-600 { background-color: #0891b2 !important; }
@@ -20,10 +20,10 @@
         [data-theme="rose"] .bg-cyan-600 { background-color: #e11d48 !important; }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col pb-16 md:pb-0">
+<body class="bg-slate-900 text-slate-100 font-sans flex flex-col h-screen overflow-hidden">
     <!-- Header cho desktop -->
-    <header class="hidden md:flex bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 h-16 w-full flex items-center justify-between">
+    <header class="hidden md:flex bg-slate-800 border-b border-slate-700 h-16 shrink-0 items-center">
+        <div class="max-w-7xl mx-auto px-4 w-full flex items-center justify-between">
             <div class="flex items-center space-x-3"><i class="fa-solid fa-shield-cat text-cyan-400 text-2xl"></i><span class="font-bold text-xl text-cyan-400">CHI DOI CHAT</span></div>
             <nav class="flex items-center space-x-5">
                 <a href="chat-group.html" class="text-cyan-400 font-medium text-sm flex items-center gap-1"><i class="fa-solid fa-users"></i> Chat Nhóm</a>
@@ -33,31 +33,32 @@
         </div>
     </header>
 
-    <main class="flex-1 max-w-7xl w-full mx-auto p-2 md:p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-4rem)] md:h-[calc(100vh-5rem)] pb-20 md:pb-4">
-        <aside class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-40 md:h-full shrink-0">
-            <div class="p-3 border-b border-slate-700 flex justify-between items-center"><span class="font-bold text-xs uppercase text-slate-400">Thành Viên Trực Tuyến</span><span id="friends-count" class="text-xs bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-800">0</span></div>
+    <!-- Main container: chừa đúng 4rem cho thanh điều hướng dưới trên mobile -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-2 md:p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] pb-16 md:pb-4 overflow-hidden">
+        <aside class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-32 md:h-full shrink-0">
+            <div class="p-2.5 border-b border-slate-700 flex justify-between items-center"><span class="font-bold text-xs uppercase text-slate-400">Thành Viên</span><span id="friends-count" class="text-xs bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-800">0</span></div>
             <div id="friends-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
         </aside>
-        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full">
-            <div class="p-3 md:p-4 border-b border-slate-700 flex justify-between items-center">
-                <h3 class="font-bold text-sm md:text-base text-cyan-400"><i class="fa-solid fa-users"></i> PHÒNG CHAT NHÓM</h3>
+        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full min-h-0">
+            <div class="p-3 border-b border-slate-700 flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-sm text-cyan-400"><i class="fa-solid fa-users"></i> PHÒNG CHAT NHÓM</h3>
                 <div class="flex gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-700">
                     <button onclick="chat.setTheme('cyan')" class="w-4 h-4 rounded-full bg-cyan-500"></button>
                     <button onclick="chat.setTheme('emerald')" class="w-4 h-4 rounded-full bg-emerald-500"></button>
                     <button onclick="chat.setTheme('rose')" class="w-4 h-4 rounded-full bg-rose-500"></button>
                 </div>
             </div>
-            <div id="chat-messages" class="flex-1 p-3 md:p-4 overflow-y-auto space-y-3 bg-slate-900"></div>
-            <form onsubmit="chat.sendMessage(event)" class="p-2.5 bg-slate-800 border-t border-slate-700 flex gap-2 items-center">
-                <button type="button" onclick="chat.triggerImageUpload()" class="bg-slate-900 text-cyan-400 p-2.5 md:p-3 rounded-lg border border-slate-700"><i class="fa-solid fa-image"></i></button>
-                <input type="text" id="chat-input" placeholder="Nhập tin nhắn bảo mật..." class="flex-1 px-3 py-2.5 md:py-3 text-sm outline-none">
-                <button type="submit" class="bg-cyan-600 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg font-medium"><i class="fa-solid fa-paper-plane"></i></button>
+            <div id="chat-messages" class="flex-1 p-3 md:p-4 overflow-y-auto space-y-3 bg-slate-900 min-h-0"></div>
+            <form onsubmit="chat.sendMessage(event)" class="p-2.5 bg-slate-800 border-t border-slate-700 flex gap-2 items-center shrink-0">
+                <button type="button" onclick="chat.triggerImageUpload()" class="bg-slate-900 text-cyan-400 p-2.5 rounded-lg border border-slate-700"><i class="fa-solid fa-image"></i></button>
+                <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." class="flex-1 px-3 py-2.5 text-sm outline-none">
+                <button type="submit" class="bg-cyan-600 text-white px-4 py-2.5 rounded-lg font-medium"><i class="fa-solid fa-paper-plane"></i></button>
             </form>
         </section>
     </main>
 
-    <!-- Thanh điều hướng dưới cùng phong cách Message (Dành riêng cho Mobile & Tablet) -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 h-16 flex justify-around items-center z-50 px-2">
+    <!-- Thanh điều hướng dưới cùng cố định -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 h-16 flex justify-around items-center z-50 px-2 shadow-2xl">
         <a href="chat-group.html" class="flex flex-col items-center justify-center flex-1 text-cyan-400 py-1">
             <i class="fa-solid fa-users text-lg"></i>
             <span class="text-[10px] font-medium mt-1">Nhóm</span>
