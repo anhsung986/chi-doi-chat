@@ -1,6 +1,6 @@
 /**
- * Real-Time Encrypted Broadcast Chat Engine (AES-GCM 256-bit)
- * Mã hóa tin nhắn trước khi lưu LocalStorage và truyền qua BroadcastChannel.
+ * Real-Time Encrypted Broadcast Chat Engine
+ * Nhận diện tin nhắn người gửi chính xác qua userId thay vì username.
  */
 class ChatEngine {
     constructor() {
@@ -41,28 +41,22 @@ class ChatEngine {
 
         if (!rawText || !currentUser) return;
 
-        // 1. Mã hóa tin nhắn bằng AES-GCM 256-bit trước khi gửi/lưu
         const encryptedData = await SecurityEngine.encryptAESGCM(rawText);
 
         const msgPayload = {
             id: Date.now(),
+            senderId: currentUser.id, // Đính kèm ID người gửi
             senderUsername: currentUser.username,
             senderName: currentUser.displayName,
-            senderIcon: currentUser.icon || 'fa-solid fa-user',
-            encryptedData: encryptedData, // Không truyền văn bản thô
+            senderIcon: currentUser.icon || 'fa-solid fa-user-ninja',
+            encryptedData: encryptedData,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
 
-        // 2. Lưu vào LocalStorage mã hóa
         db.saveMessage(msgPayload);
-
-        // 3. Hiển thị trên màn hình người gửi
         await this.renderSingleMessage(msgPayload);
-
-        // 4. Phát tín hiệu qua BroadcastChannel cho tab khác
         this.channel.postMessage({ type: 'NEW_MESSAGE', payload: msgPayload });
 
-        // Reset
         input.value = '';
         this.sendTypingStop();
     }
@@ -70,17 +64,28 @@ class ChatEngine {
     async renderSingleMessage(msg) {
         const container = document.getElementById('chat-messages');
         const currentUser = db.getSession();
-        const isSelf = currentUser && currentUser.username === msg.senderUsername;
+        
+        // Kiểm tra chính chủ tin nhắn qua senderId (hoặc senderUsername nếu là tin cũ)
+        const isSelf = currentUser && (
+            (msg.senderId && msg.senderId === currentUser.id) || 
+            (!msg.senderId && msg.senderUsername === currentUser.username)
+        );
 
-        // 解密 (Giải mã) nội dung AES-GCM 256-bit
         let plainText = '';
         if (msg.encryptedData) {
             plainText = await SecurityEngine.decryptAESGCM(msg.encryptedData);
         } else {
-            plainText = msg.text || ''; // Fallback cho tin nhắn cũ
+            plainText = msg.text || '';
         }
 
         const sanitizedText = SecurityEngine.sanitizeHTML(plainText);
+
+        let avatarHtml = '';
+        if (msg.senderIcon && msg.senderIcon.startsWith('data:image/')) {
+            avatarHtml = `<img src="${msg.senderIcon}" class="w-5 h-5 rounded-full object-cover border border-cyan-400/50" alt="avatar">`;
+        } else {
+            avatarHtml = `<i class="${msg.senderIcon || 'fa-solid fa-user'}"></i>`;
+        }
 
         const msgDiv = document.createElement('div');
         msgDiv.className = `flex gap-2 mb-3 ${isSelf ? 'justify-end' : 'justify-start'}`;
@@ -88,7 +93,7 @@ class ChatEngine {
         msgDiv.innerHTML = `
             <div class="max-w-[75%] ${isSelf ? 'bg-cyan-600 text-white rounded-l-xl rounded-tr-xl' : 'bg-slate-800 text-slate-100 rounded-r-xl rounded-tl-xl border border-slate-700'} p-3 shadow-md">
                 <div class="flex items-center gap-2 mb-1 text-xs text-slate-300 font-semibold border-b border-white/10 pb-1">
-                    <i class="${msg.senderIcon}"></i>
+                    ${avatarHtml}
                     <span>${msg.senderName}</span>
                     <span class="text-[10px] bg-cyan-950/80 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-800/50">AES-256</span>
                     <span class="text-[10px] opacity-60 ml-auto">${msg.time}</span>
@@ -132,4 +137,3 @@ class ChatEngine {
 }
 
 const chat = new ChatEngine();
-            
