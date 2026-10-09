@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- CSS Fallback bảo đảm hiển thị màu sắc -->
+    <!-- CSS Fallback bảo đảm hiển thị màu sắc &Theme Selector -->
     <style>
         html, body { background-color: #0f172a !important; color: #f8fafc !important; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; }
         .bg-slate-900 { background-color: #0f172a !important; }
@@ -26,10 +26,17 @@
         input:focus { border-color: #06b6d4 !important; outline: none; }
         button { cursor: pointer; }
         a { text-decoration: none; }
+
+        /* Theme Dynamic Colors */
+        [data-theme="emerald"] .text-cyan-400 { color: #34d399 !important; }
+        [data-theme="emerald"] .bg-cyan-600 { background-color: #059669 !important; }
+        [data-theme="rose"] .text-cyan-400 { color: #fb7185 !important; }
+        [data-theme="rose"] .bg-cyan-600 { background-color: #e11d48 !important; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
 
+    <!-- NAVIGATION HEADER -->
     <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3">
@@ -41,19 +48,20 @@
                 <a href="chat-private.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-lock"></i> Chat Riêng</a>
                 <a href="profile.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-user"></i> Profile</a>
                 <a href="settings.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-gear"></i> Settings</a>
-                <button onclick="auth.logout()" class="text-rose-400 hover:text-rose-300 text-sm ml-2"><i class="fa-solid fa-right-from-bracket"></i></button>
+                <button onclick="auth.logout()" class="text-rose-400 hover:text-rose-300 text-sm ml-2" title="Đăng xuất"><i class="fa-solid fa-right-from-bracket"></i></button>
             </nav>
         </div>
     </header>
 
+    <!-- MAIN CHAT CONTAINER -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-5rem)]">
         
-        <!-- SIDEBAR DANH SÁCH THÀNH VIÊN -->
+        <!-- SIDEBAR DANH SÁCH THÀNH VIÊN REALTIME -->
         <aside class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-60 md:h-full">
             <div class="p-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-users text-cyan-400"></i>
-                    <h3 class="font-bold text-sm text-slate-100">Thành Viên Nhóm</h3>
+                    <h3 class="font-bold text-sm text-slate-100">Thành Viên Hệ Thống</h3>
                 </div>
                 <span id="friends-count" class="text-xs bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-800 font-semibold">0</span>
             </div>
@@ -61,7 +69,7 @@
             <div class="p-2 bg-slate-900 border-b border-slate-700">
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
-                    <input type="text" id="search-friends" oninput="chat.filterFriends(this.value)" placeholder="Tìm tên thành viên..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white outline-none">
+                    <input type="text" id="search-friends" oninput="chat.searchFriends(this.value)" placeholder="Tìm thành viên..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white outline-none">
                 </div>
             </div>
 
@@ -69,24 +77,46 @@
         </aside>
 
         <!-- KHUNG CHAT NHÓM CHÍNH -->
-        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full">
-            <div class="bg-slate-800 p-4 border-b border-slate-700 flex justify-between items-center">
+        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full relative">
+            
+            <!-- TOOLBAR TRÊN -->
+            <div class="bg-slate-800 p-3 sm:p-4 border-b border-slate-700 flex flex-wrap justify-between items-center gap-2">
                 <div>
-                    <h3 class="font-bold text-lg text-cyan-400 flex items-center gap-2">
+                    <h3 class="font-bold text-base sm:text-lg text-cyan-400 flex items-center gap-2">
                         <i class="fa-solid fa-users text-cyan-400"></i> PHÒNG CHAT NHÓM CHUNG
                     </h3>
-                    <p class="text-xs text-slate-400">Tất cả thành viên trong hệ thống đều có thể tham gia trò chuyện</p>
+                    <p class="text-[11px] text-slate-400">Tất cả thành viên đều có thể gửi tin nhắn mã hóa AES-256</p>
                 </div>
-                <div class="text-xs bg-slate-900 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Real-time
+                
+                <div class="flex items-center gap-2">
+                    <!-- Ô Tìm Kiếm Tin Nhắn -->
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-xs text-slate-400"></i>
+                        <input type="text" oninput="chat.searchMessages(this.value)" placeholder="Tìm tin nhắn..." class="bg-slate-900 border border-slate-700 rounded-lg pl-7 pr-2 py-1 text-xs text-white outline-none w-28 sm:w-40 focus:w-48 transition-all">
+                    </div>
+
+                    <!-- Nút Đổi Màu Theme -->
+                    <div class="flex gap-1 bg-slate-900 p-1 rounded-lg border border-slate-700">
+                        <button onclick="chat.setTheme('cyan')" class="w-4 h-4 rounded-full bg-cyan-500" title="Xanh Cyan"></button>
+                        <button onclick="chat.setTheme('emerald')" class="w-4 h-4 rounded-full bg-emerald-500" title="Xanh Ngọc"></button>
+                        <button onclick="chat.setTheme('rose')" class="w-4 h-4 rounded-full bg-rose-500" title="Đỏ Hồng"></button>
+                    </div>
                 </div>
             </div>
 
+            <!-- NƠI CHỨA TIN NHẮN -->
             <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-900"></div>
 
-            <form onsubmit="chat.sendMessage(event)" class="p-3 bg-slate-800 border-t border-slate-700 flex gap-2">
+            <!-- FORM GỬI TIN NHẮN & TẢI ẢNH -->
+            <form onsubmit="chat.sendMessage(event)" class="p-3 bg-slate-800 border-t border-slate-700 flex gap-2 items-center">
+                <!-- Nút Tải Ảnh Mã Hóa -->
+                <button type="button" onclick="chat.triggerImageUpload()" class="bg-slate-900 hover:bg-slate-700 text-cyan-400 p-3 rounded-lg border border-slate-700 transition" title="Gửi ảnh mã hóa AES-256">
+                    <i class="fa-solid fa-image text-base"></i>
+                </button>
+
                 <input type="text" id="chat-input" placeholder="Nhập tin nhắn nhóm (Mã hóa AES-256)..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none">
-                <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-lg font-medium transition flex items-center gap-2 shadow-md">
+                
+                <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white px-5 sm:px-6 py-3 rounded-lg font-medium transition flex items-center gap-2 shadow-md shrink-0">
                     <span>Gửi</span>
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
