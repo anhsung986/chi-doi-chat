@@ -11,7 +11,7 @@
 
     <!-- Navigation Bar Header -->
     <header class="bg-slate-800/90 border-b border-slate-700 sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-shield-cat text-cyan-400 text-2xl"></i>
                 <span class="font-bold text-xl bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">CHI DOI CHAT</span>
@@ -25,17 +25,46 @@
         </div>
     </header>
 
-    <!-- Chat Area -->
-    <main class="flex-1 max-w-6xl w-full mx-auto p-4 flex flex-col justify-center">
-        <section class="flex-1 flex flex-col h-[80vh] bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl">
-            <!-- Header Kênh -->
+    <!-- Main Container: Chia 2 Cột (Sidebar Bạn Bè + Khung Chat) -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-5rem)]">
+        
+        <!-- SIDEBAR: DANH SÁCH BẠN BÈ / THÀNH VIÊN -->
+        <aside class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-60 md:h-full">
+            <!-- Sidebar Header -->
+            <div class="p-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-users text-cyan-400"></i>
+                    <h3 class="font-bold text-sm text-slate-100">Danh Sách Bạn Bè</h3>
+                </div>
+                <span id="friends-count" class="text-xs bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-800/60 font-semibold">0</span>
+            </div>
+
+            <!-- Tìm kiếm bạn bè -->
+            <div class="p-2 bg-slate-900/60 border-b border-slate-700/60">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+                    <input type="text" id="search-friends" oninput="chat.filterFriends(this.value)" placeholder="Tìm tên hoặc username..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:border-cyan-500 outline-none">
+                </div>
+            </div>
+
+            <!-- Danh sách người dùng -->
+            <div id="friends-list" class="flex-1 overflow-y-auto p-2 space-y-1 divide-y divide-slate-700/30">
+                <!-- Javascript sẽ tự động load bạn bè vào đây -->
+            </div>
+        </aside>
+
+        <!-- KHUNG CHAT CHÍNH -->
+        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full">
+            <!-- Chat Header -->
             <div class="bg-slate-800 p-4 border-b border-slate-700 flex justify-between items-center">
                 <div>
-                    <h3 class="font-bold text-lg text-cyan-400">CHI DOI CHAT ROOM</h3>
+                    <h3 class="font-bold text-lg text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-comments"></i> CHI DOI CHAT ROOM
+                    </h3>
                     <p class="text-xs text-slate-400">Kênh truyền nhận dữ liệu mã hóa AES-GCM 256-bit thời gian thực</p>
                 </div>
                 <div class="text-xs bg-slate-900 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Real-time Sync
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Real-time Active
                 </div>
             </div>
 
@@ -54,6 +83,7 @@
                 </button>
             </form>
         </section>
+
     </main>
 
     <script src="js/crypto.js"></script>
@@ -67,6 +97,7 @@
                 window.location.href = 'login.html';
             } else {
                 chat.loadHistory();
+                chat.loadFriendsList();
             }
         });
     </script>
