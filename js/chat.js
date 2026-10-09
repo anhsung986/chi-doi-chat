@@ -1,23 +1,80 @@
 /**
- * Real-Time Encrypted Chat Engine with Firebase RTDB
+ * Real-Time Encrypted Chat Engine (Group & Direct Messaging)
  */
 class ChatEngine {
     constructor() {
         this.allFriends = [];
         this.renderedMsgIds = new Set();
+        this.activeRoomId = 'group'; // Mặc định là phòng chat nhóm
+        this.activeTargetUser = null; // null: Nhóm, object User: Chat riêng
+    }
+
+    // Tạo Room ID cố định duy nhất cho 2 người dùng
+    getPrivateRoomId(id1, id2) {
+        return 'dm_' + [id1, id2].sort().join('_');
     }
 
     initRealtimeListeners() {
+        // Lắng nghe danh sách bạn bè
         db.listenUsers((users) => {
             this.allFriends = users;
             const currentUser = db.getSession();
             this.renderFriends(users, currentUser);
         });
 
-        db.listenMessages(async (msg) => {
+        // Mặc định vào Chat Nhóm
+        this.switchRoom('group', null);
+    }
+
+    // Chuyển đổi giữa Chat Nhóm và Chat Riêng
+    switchRoom(roomId, targetUser = null) {
+        if (this.activeRoomId) {
+            db.stopListenMessages(this.activeRoomId);
+        }
+
+        this.activeRoomId = roomId;
+        this.activeTargetUser = targetUser;
+        this.renderedMsgIds.clear();
+
+        // Xóa khung chat hiện tại
+        const container = document.getElementById('chat-messages');
+        if (container) container.innerHTML = '';
+
+        // Cập nhật tiêu đề khung chat
+        const titleEl = document.getElementById('chat-room-title');
+        const descEl = document.getElementById('chat-room-desc');
+        if (titleEl) {
+            if (targetUser) {
+                titleEl.innerHTML = `<i class="fa-solid fa-lock text-cyan-400"></i> Chat Riêng: <span class="text-white">${SecurityEngine.sanitizeHTML(targetUser.displayName || targetUser.username)}</span>`;
+                if (descEl) descEl.innerText = `Tin nhắn mã hóa AES-256 riêng tư với @${SecurityEngine.sanitizeHTML(targetUser.username)}`;
+            } else {
+                titleEl.innerHTML = `<i class="fa-solid fa-comments text-cyan-400"></i> CHI DOI CHAT ROOM (Nhóm)`;
+                if (descEl) descEl.innerText = `Đồng bộ Firebase Realtime DB & Mã Hóa AES-GCM 256-bit`;
+            }
+        }
+
+        // Đánh dấu người dùng đang được chọn trong Sidebar
+        this.highlightActiveItem();
+
+        // Lắng nghe tin nhắn từ phòng mới
+        db.listenMessages(this.activeRoomId, async (msg) => {
             if (!this.renderedMsgIds.has(msg.id)) {
                 this.renderedMsgIds.add(msg.id);
                 await this.renderSingleMessage(msg);
+            }
+        });
+    }
+
+    highlightActiveItem() {
+        const items = document.querySelectorAll('.sidebar-item');
+        items.forEach(el => {
+            const targetId = el.getAttribute('data-target-id');
+            if ((!this.activeTargetUser && targetId === 'group') || (this.activeTargetUser && targetId === this.activeTargetUser.id)) {
+                el.classList.add('bg-cyan-950', 'border-cyan-800');
+                el.classList.remove('hover:bg-slate-700');
+            } else {
+                el.classList.remove('bg-cyan-950', 'border-cyan-800');
+                el.classList.add('hover:bg-slate-700');
             }
         });
     }
@@ -30,11 +87,25 @@ class ChatEngine {
         if (countEl) countEl.innerText = usersList.length;
         container.innerHTML = '';
 
-        if (!usersList || usersList.length === 0) {
-            container.innerHTML = `<div class="text-xs text-slate-500 text-center py-4">Chưa có thành viên nào</div>`;
-            return;
-        }
+        // 1. Nút "Phòng Chat Nhóm" ở đầu danh sách
+        const groupBtn = document.createElement('div');
+        groupBtn.setAttribute('data-target-id', 'group');
+        groupBtn.className = `sidebar-item flex items-center gap-3 p-2.5 rounded-xl transition cursor-pointer border border-transparent ${!this.activeTargetUser ? 'bg-cyan-950 border-cyan-800' : 'hover:bg-slate-700'}`;
+        groupBtn.onclick = () => this.switchRoom('group', null);
+        groupBtn.innerHTML = `
+            <div class="w-8 h-8 bg-cyan-600/30 border border-cyan-500/50 rounded-full flex items-center justify-center text-cyan-400 text-xs shrink-0">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-xs font-bold text-cyan-400">Phòng Chat Nhóm</div>
+                <div class="text-[10px] text-slate-400 truncate">Tất cả thành viên</div>
+            </div>
+        `;
+        container.appendChild(groupBtn);
 
+        if (!usersList || usersList.length === 0) return;
+
+        // 2. Danh sách thành viên (Nhấp vào để Chat Riêng)
         usersList.forEach(u => {
             const isSelf = currentUser && u.id === currentUser.id;
 
@@ -46,8 +117,18 @@ class ChatEngine {
             }
 
             const item = document.createElement('div');
-            item.className = `flex items-center gap-3 p-2 rounded-xl transition cursor-pointer ${isSelf ? 'bg-cyan-950' : 'hover:bg-slate-700'}`;
+            item.setAttribute('data-target-id', u.id);
+            item.className = `sidebar-item flex items-center gap-3 p-2 rounded-xl transition cursor-pointer border border-transparent ${this.activeTargetUser && this.activeTargetUser.id === u.id ? 'bg-cyan-950 border-cyan-800' : 'hover:bg-slate-700'}`;
             
+            if (isSelf) {
+                item.onclick = () => alert("Đây là tài khoản của bạn!");
+            } else {
+                item.onclick = () => {
+                    const privateRoomId = this.getPrivateRoomId(currentUser.id, u.id);
+                    this.switchRoom(privateRoomId, u);
+                };
+            }
+
             item.innerHTML = `
                 <div class="relative shrink-0">
                     ${avatarHtml}
@@ -91,6 +172,7 @@ class ChatEngine {
 
         if (!rawText || !currentUser) return;
 
+        // Mã hóa AES-256
         const encryptedData = await SecurityEngine.encryptAESGCM(rawText);
 
         const msgPayload = {
@@ -103,7 +185,7 @@ class ChatEngine {
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
 
-        await db.saveMessageToFirebase(msgPayload);
+        await db.saveMessageToFirebase(this.activeRoomId, msgPayload);
         input.value = '';
     }
 
@@ -151,4 +233,4 @@ class ChatEngine {
 }
 
 const chat = new ChatEngine();
-              
+                
