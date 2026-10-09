@@ -1,6 +1,6 @@
 /**
- * Real-Time Broadcast Chat Engine
- * Giúp Play(a) và Play(b) nhắn tin, nhận tin, hiện "Đang viết..." theo thời gian thực không qua Backend server.
+ * Real-Time Encrypted Broadcast Chat Engine (AES-GCM 256-bit)
+ * Mã hóa tin nhắn trước khi lưu LocalStorage và truyền qua BroadcastChannel.
  */
 class ChatEngine {
     constructor() {
@@ -10,12 +10,11 @@ class ChatEngine {
     }
 
     setupListeners() {
-        // Lắng nghe sự kiện từ các tab/cửa sổ khác
-        this.channel.onmessage = (event) => {
+        this.channel.onmessage = async (event) => {
             const { type, payload } = event.data;
 
             if (type === 'NEW_MESSAGE') {
-                this.renderSingleMessage(payload);
+                await this.renderSingleMessage(payload);
             } else if (type === 'TYPING_START') {
                 this.showTyping(payload.user);
             } else if (type === 'TYPING_STOP') {
@@ -24,38 +23,43 @@ class ChatEngine {
         };
     }
 
-    loadHistory() {
+    async loadHistory() {
         const container = document.getElementById('chat-messages');
         container.innerHTML = '';
         const messages = db.getMessages();
-        messages.forEach(msg => this.renderSingleMessage(msg));
+        for (const msg of messages) {
+            await this.renderSingleMessage(msg);
+        }
         container.scrollTop = container.scrollHeight;
     }
 
-    sendMessage(e) {
+    async sendMessage(e) {
         e.preventDefault();
         const input = document.getElementById('chat-input');
-        const text = input.value.trim();
+        const rawText = input.value.trim();
         const currentUser = db.getSession();
 
-        if (!text || !currentUser) return;
+        if (!rawText || !currentUser) return;
+
+        // 1. Mã hóa tin nhắn bằng AES-GCM 256-bit trước khi gửi/lưu
+        const encryptedData = await SecurityEngine.encryptAESGCM(rawText);
 
         const msgPayload = {
             id: Date.now(),
             senderUsername: currentUser.username,
             senderName: currentUser.displayName,
             senderIcon: currentUser.icon || 'fa-solid fa-user',
-            text: SecurityEngine.sanitizeHTML(text),
+            encryptedData: encryptedData, // Không truyền văn bản thô
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
 
-        // Lưu local
+        // 2. Lưu vào LocalStorage mã hóa
         db.saveMessage(msgPayload);
 
-        // Hiển thị ở bản thân (Play A)
-        this.renderSingleMessage(msgPayload);
+        // 3. Hiển thị trên màn hình người gửi
+        await this.renderSingleMessage(msgPayload);
 
-        // Phát tín hiệu Real-time cho Play B
+        // 4. Phát tín hiệu qua BroadcastChannel cho tab khác
         this.channel.postMessage({ type: 'NEW_MESSAGE', payload: msgPayload });
 
         // Reset
@@ -63,10 +67,20 @@ class ChatEngine {
         this.sendTypingStop();
     }
 
-    renderSingleMessage(msg) {
+    async renderSingleMessage(msg) {
         const container = document.getElementById('chat-messages');
         const currentUser = db.getSession();
         const isSelf = currentUser && currentUser.username === msg.senderUsername;
+
+        // 解密 (Giải mã) nội dung AES-GCM 256-bit
+        let plainText = '';
+        if (msg.encryptedData) {
+            plainText = await SecurityEngine.decryptAESGCM(msg.encryptedData);
+        } else {
+            plainText = msg.text || ''; // Fallback cho tin nhắn cũ
+        }
+
+        const sanitizedText = SecurityEngine.sanitizeHTML(plainText);
 
         const msgDiv = document.createElement('div');
         msgDiv.className = `flex gap-2 mb-3 ${isSelf ? 'justify-end' : 'justify-start'}`;
@@ -76,9 +90,10 @@ class ChatEngine {
                 <div class="flex items-center gap-2 mb-1 text-xs text-slate-300 font-semibold border-b border-white/10 pb-1">
                     <i class="${msg.senderIcon}"></i>
                     <span>${msg.senderName}</span>
+                    <span class="text-[10px] bg-cyan-950/80 text-cyan-400 px-1.5 py-0.5 rounded border border-cyan-800/50">AES-256</span>
                     <span class="text-[10px] opacity-60 ml-auto">${msg.time}</span>
                 </div>
-                <div class="text-sm break-words">${msg.text}</div>
+                <div class="text-sm break-words">${sanitizedText}</div>
             </div>
         `;
 
@@ -117,3 +132,4 @@ class ChatEngine {
 }
 
 const chat = new ChatEngine();
+            
