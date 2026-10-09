@@ -21,32 +21,26 @@
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans flex flex-col h-screen overflow-hidden">
-    <!-- Header cho desktop -->
+    <!-- Header desktop -->
     <header class="hidden md:flex bg-slate-800 border-b border-slate-700 h-16 shrink-0 items-center">
         <div class="max-w-7xl mx-auto px-4 w-full flex items-center justify-between">
             <div class="flex items-center space-x-3"><i class="fa-solid fa-shield-cat text-cyan-400 text-2xl"></i><span class="font-bold text-xl text-cyan-400">CHI DOI CHAT</span></div>
             <nav class="flex items-center space-x-5">
-                <a href="chat-group.html" class="text-cyan-400 font-medium text-sm flex items-center gap-1"><i class="fa-solid fa-users"></i> Chat Nhóm</a>
-                <a href="chat-private.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-lock"></i> Chat Riêng</a>
+                <a href="chat-group.html" class="text-cyan-400 font-medium text-sm flex items-center gap-1"><i class="fa-solid fa-comments"></i> Chat Nhóm</a>
+                <a href="chat-private.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-user-group"></i> Chat Riêng</a>
                 <button onclick="auth.logout()" class="text-rose-400 text-sm ml-2"><i class="fa-solid fa-right-from-bracket"></i></button>
             </nav>
         </div>
     </header>
 
-    <!-- Main container: chừa đúng 4rem cho thanh điều hướng dưới trên mobile -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-2 md:p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] pb-16 md:pb-4 overflow-hidden">
         <aside class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-32 md:h-full shrink-0">
             <div class="p-2.5 border-b border-slate-700 flex justify-between items-center"><span class="font-bold text-xs uppercase text-slate-400">Thành Viên</span><span id="friends-count" class="text-xs bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-800">0</span></div>
             <div id="friends-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
         </aside>
-        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full min-h-0">
+        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full min-h-0 relative">
             <div class="p-3 border-b border-slate-700 flex justify-between items-center shrink-0">
-                <h3 class="font-bold text-sm text-cyan-400"><i class="fa-solid fa-users"></i> PHÒNG CHAT NHÓM</h3>
-                <div class="flex gap-1.5 bg-slate-900 p-1 rounded-lg border border-slate-700">
-                    <button onclick="chat.setTheme('cyan')" class="w-4 h-4 rounded-full bg-cyan-500"></button>
-                    <button onclick="chat.setTheme('emerald')" class="w-4 h-4 rounded-full bg-emerald-500"></button>
-                    <button onclick="chat.setTheme('rose')" class="w-4 h-4 rounded-full bg-rose-500"></button>
-                </div>
+                <h3 class="font-bold text-sm text-cyan-400"><i class="fa-solid fa-comments"></i> PHÒNG CHAT NHÓM</h3>
             </div>
             <div id="chat-messages" class="flex-1 p-3 md:p-4 overflow-y-auto space-y-3 bg-slate-900 min-h-0"></div>
             <form onsubmit="chat.sendMessage(event)" class="p-2.5 bg-slate-800 border-t border-slate-700 flex gap-2 items-center shrink-0">
@@ -57,25 +51,53 @@
         </section>
     </main>
 
-    <!-- Thanh điều hướng dưới cùng cố định -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 h-16 flex justify-around items-center z-50 px-2 shadow-2xl">
+    <!-- Bảng Menu 3 gạch ẩn (Popup) -->
+    <div id="messenger-menu-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+        <div class="bg-slate-800 w-full md:w-96 rounded-t-3xl md:rounded-2xl border border-slate-700 p-4 shadow-2xl space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                <span class="font-bold text-sm text-cyan-400"><i class="fa-solid fa-bars"></i> Menu Tùy Chỉnh</span>
+                <button onclick="toggleMessengerMenu()" class="text-slate-400 hover:text-white px-2 py-1 text-sm"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-1.5">
+                <div class="text-[11px] font-bold text-slate-400 uppercase">Đổi chủ đề màu sắc</div>
+                <button onclick="chat.setTheme('cyan'); toggleMessengerMenu();" class="w-full text-left px-3 py-2 text-xs rounded-xl bg-slate-900 hover:bg-slate-700 text-cyan-400 flex items-center gap-2"><i class="fa-solid fa-circle text-[10px]"></i> Xanh Cyan (Mặc định)</button>
+                <button onclick="chat.setTheme('emerald'); toggleMessengerMenu();" class="w-full text-left px-3 py-2 text-xs rounded-xl bg-slate-900 hover:bg-slate-700 text-emerald-400 flex items-center gap-2"><i class="fa-solid fa-circle text-[10px]"></i> Xanh Ngọc (Emerald)</button>
+                <button onclick="chat.setTheme('rose'); toggleMessengerMenu();" class="w-full text-left px-3 py-2 text-xs rounded-xl bg-slate-900 hover:bg-slate-700 text-rose-400 flex items-center gap-2"><i class="fa-solid fa-circle text-[10px]"></i> Hồng Rose</button>
+            </div>
+            <div class="border-t border-slate-700 pt-2">
+                <button onclick="auth.logout()" class="w-full py-2.5 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-400 font-medium text-xs flex items-center justify-center gap-2"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất tài khoản</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thanh điều hướng dưới chuẩn 4 nút Messenger (Dành riêng cho Mobile) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 h-16 flex justify-around items-center z-40 px-2 shadow-2xl">
         <a href="chat-group.html" class="flex flex-col items-center justify-center flex-1 text-cyan-400 py-1">
-            <i class="fa-solid fa-users text-lg"></i>
-            <span class="text-[10px] font-medium mt-1">Nhóm</span>
+            <div class="w-10 h-7 bg-cyan-950/60 rounded-full flex items-center justify-center border border-cyan-800/50"><i class="fa-solid fa-comments text-base"></i></div>
+            <span class="text-[10px] font-semibold mt-0.5">Đoạn chat</span>
         </a>
         <a href="chat-private.html" class="flex flex-col items-center justify-center flex-1 text-slate-400 hover:text-cyan-400 py-1">
-            <i class="fa-solid fa-lock text-lg"></i>
-            <span class="text-[10px] font-medium mt-1">Riêng tư</span>
+            <div class="w-10 h-7 rounded-full flex items-center justify-center"><i class="fa-solid fa-user-group text-base"></i></div>
+            <span class="text-[10px] font-medium mt-0.5">Mọi người</span>
         </a>
-        <button onclick="auth.logout()" class="flex flex-col items-center justify-center flex-1 text-rose-400 py-1">
-            <i class="fa-solid fa-right-from-bracket text-lg"></i>
-            <span class="text-[10px] font-medium mt-1">Thoát</span>
+        <button onclick="chat.setTheme(localStorage.getItem('chat_theme') === 'rose' ? 'cyan' : 'rose')" class="flex flex-col items-center justify-center flex-1 text-slate-400 hover:text-cyan-400 py-1">
+            <div class="w-10 h-7 rounded-full flex items-center justify-center"><i class="fa-solid fa-palette text-base"></i></div>
+            <span class="text-[10px] font-medium mt-0.5">Chủ đề</span>
+        </button>
+        <button onclick="toggleMessengerMenu()" class="flex flex-col items-center justify-center flex-1 text-slate-400 hover:text-cyan-400 py-1">
+            <div class="w-10 h-7 rounded-full flex items-center justify-center"><i class="fa-solid fa-bars text-base"></i></div>
+            <span class="text-[10px] font-medium mt-0.5">Menu</span>
         </button>
     </nav>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="js/crypto.js"></script><script src="js/db.js"></script><script src="js/auth.js"></script><script src="js/chat.js"></script>
-    <script>document.addEventListener('DOMContentLoaded', () => { if (!db.getSession()) window.location.href='login.html'; else { chat.switchRoom('group'); chat.initRealtimeListeners(); } });</script>
+    <script>
+        function toggleMessengerMenu() {
+            document.getElementById('messenger-menu-modal').classList.toggle('hidden');
+        }
+        document.addEventListener('DOMContentLoaded', () => { if (!db.getSession()) window.location.href='login.html'; else { chat.switchRoom('group'); chat.initRealtimeListeners(); } });
+    </script>
 </body>
 </html>
