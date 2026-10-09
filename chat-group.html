@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Group & Direct | CHI DOI CHAT</title>
+    <title>Chat Nhóm | CHI DOI CHAT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -37,7 +37,8 @@
                 <span class="font-bold text-xl text-cyan-400">CHI DOI CHAT</span>
             </div>
             <nav class="flex items-center space-x-5">
-                <a href="chat-group.html" class="text-cyan-400 font-medium text-sm flex items-center gap-1"><i class="fa-solid fa-comments"></i> Chat Room</a>
+                <a href="chat-group.html" class="text-cyan-400 font-medium text-sm flex items-center gap-1"><i class="fa-solid fa-users"></i> Chat Nhóm</a>
+                <a href="chat-private.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-lock"></i> Chat Riêng</a>
                 <a href="profile.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-user"></i> Profile</a>
                 <a href="settings.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-gear"></i> Settings</a>
                 <button onclick="auth.logout()" class="text-rose-400 hover:text-rose-300 text-sm ml-2"><i class="fa-solid fa-right-from-bracket"></i></button>
@@ -47,12 +48,12 @@
 
     <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-5rem)]">
         
-        <!-- SIDEBAR DANH SÁCH BẠN BÈ & CHAT NHÓM -->
-        <aside class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-64 md:h-full">
+        <!-- SIDEBAR DANH SÁCH THÀNH VIÊN -->
+        <aside class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-60 md:h-full">
             <div class="p-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-users text-cyan-400"></i>
-                    <h3 class="font-bold text-sm text-slate-100">Bạn Bè & Trò Chuyện</h3>
+                    <h3 class="font-bold text-sm text-slate-100">Thành Viên Nhóm</h3>
                 </div>
                 <span id="friends-count" class="text-xs bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-800 font-semibold">0</span>
             </div>
@@ -60,31 +61,31 @@
             <div class="p-2 bg-slate-900 border-b border-slate-700">
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
-                    <input type="text" id="search-friends" oninput="chat.filterFriends(this.value)" placeholder="Tìm tên hoặc username..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white outline-none">
+                    <input type="text" id="search-friends" oninput="chat.filterFriends(this.value)" placeholder="Tìm tên thành viên..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white outline-none">
                 </div>
             </div>
 
             <div id="friends-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
         </aside>
 
-        <!-- KHUNG CHAT CHÍNH (ĐỔI ĐƯỢC CHẾ ĐỘ NHÓM / CÁ NHÂN) -->
+        <!-- KHUNG CHAT NHÓM CHÍNH -->
         <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full">
             <div class="bg-slate-800 p-4 border-b border-slate-700 flex justify-between items-center">
                 <div>
-                    <h3 id="chat-room-title" class="font-bold text-lg text-cyan-400 flex items-center gap-2">
-                        <i class="fa-solid fa-comments"></i> CHI DOI CHAT ROOM (Nhóm)
+                    <h3 class="font-bold text-lg text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-users text-cyan-400"></i> PHÒNG CHAT NHÓM CHUNG
                     </h3>
-                    <p id="chat-room-desc" class="text-xs text-slate-400">Đồng bộ Firebase Realtime DB & Mã Hóa AES-GCM 256-bit</p>
+                    <p class="text-xs text-slate-400">Tất cả thành viên trong hệ thống đều có thể tham gia trò chuyện</p>
                 </div>
                 <div class="text-xs bg-slate-900 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Real-time Sync
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Real-time
                 </div>
             </div>
 
             <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-900"></div>
 
             <form onsubmit="chat.sendMessage(event)" class="p-3 bg-slate-800 border-t border-slate-700 flex gap-2">
-                <input type="text" id="chat-input" placeholder="Nhập tin nhắn bảo mật AES-256..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none">
+                <input type="text" id="chat-input" placeholder="Nhập tin nhắn nhóm (Mã hóa AES-256)..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm outline-none">
                 <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-3 rounded-lg font-medium transition flex items-center gap-2 shadow-md">
                     <span>Gửi</span>
                     <i class="fa-solid fa-paper-plane"></i>
@@ -106,6 +107,7 @@
             if (!user) {
                 window.location.href = 'login.html';
             } else {
+                chat.switchRoom('group', null);
                 chat.initRealtimeListeners();
             }
         });
