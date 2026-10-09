@@ -23,6 +23,7 @@
         }
         input:focus { border-color: #06b6d4 !important; outline: none; }
         button { cursor: pointer; }
+        a { text-decoration: none; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex items-center justify-center p-4">
@@ -54,7 +55,7 @@
         </form>
 
         <div class="text-center text-xs text-slate-400">
-            Chưa có tài khoản? <a href="register.html" class="text-cyan-400 hover:underline">Đăng ký ngay</a>
+            Chưa có tài khoản? <a href="register.html" class="text-cyan-400 hover:underline font-semibold">Đăng ký ngay</a>
         </div>
     </div>
 
@@ -63,5 +64,11 @@
     <script src="js/crypto.js"></script>
     <script src="js/db.js"></script>
     <script src="js/auth.js"></script>
+    <script>
+        // Xóa sạch session cũ ngay khi vào trang đăng nhập để không bị dính tài khoản cũ
+        document.addEventListener('DOMContentLoaded', () => {
+            db.clearSession();
+        });
+    </script>
 </body>
 </html>
