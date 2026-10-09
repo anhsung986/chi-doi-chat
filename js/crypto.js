@@ -1,45 +1,54 @@
 /**
- * Cryptographic Engine - Web Crypto API
- * Chuẩn bảo mật Cấp 5 (SHA-256 Password Hash, AES-GCM 256 Message Encryption, Sanitization)
+ * Security Engine - SHA-256 Hash, AES-GCM 256-bit Encryption & XSS Sanitization
  */
 const SecurityEngine = {
-    validatePasswordLevel5(password) {
-        if (!password || password.length < 12) {
-            return { valid: false, msg: "Mật khẩu Cấp 5 phải có tối thiểu 12 ký tự!" };
-        }
-        if (!/[A-Z]/.test(password)) {
-            return { valid: false, msg: "Mật khẩu phải chứa ít nhất 1 chữ cái HOA!" };
-        }
-        if (!/[a-z]/.test(password)) {
-            return { valid: false, msg: "Mật khẩu phải chứa ít nhất 1 chữ cái thường!" };
-        }
-        if (!/[0-9]/.test(password)) {
-            return { valid: false, msg: "Mật khẩu phải chứa ít nhất 1 chữ số!" };
-        }
-        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-            return { valid: false, msg: "Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt!" };
-        }
-        return { valid: true };
-    },
-
     async hashPassword(password) {
         const encoder = new TextEncoder();
-        const data = encoder.encode(password + "_chidoi_salt_sec5");
+        const data = encoder.encode(password + "ChiDoiPhoneChat_Salt_2026");
         const hashBuffer = await crypto.subtle.digest('SHA-256', data);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     },
 
+    validatePasswordLevel5(password) {
+        if (!password || password.length < 12) {
+            return { valid: false, msg: "Mật khẩu cấp 5 yêu cầu tối thiểu 12 ký tự!" };
+        }
+        const hasUpper = /[A-Z]/.test(password);
+        const hasLower = /[a-z]/.test(password);
+        const hasNum = /[0-9]/.test(password);
+        const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+        if (!hasUpper || !hasLower || !hasNum || !hasSpecial) {
+            return { valid: false, msg: "Mật khẩu phải chứa chữ HOA, chữ thường, số và ký tự đặc biệt!" };
+        }
+        return { valid: true };
+    },
+
+    sanitizeHTML(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    },
+
     async getAESKey() {
-        const secret = "chidoi_chat_aes_key_2026_sec5";
+        const secretKeyMaterial = "ChiDoiPhoneChat_Secret_Encryption_Key_2026";
         const enc = new TextEncoder();
         const keyMaterial = await crypto.subtle.importKey(
-            "raw", enc.encode(secret), { name: "PBKDF2" }, false, ["deriveKey"]
+            "raw",
+            enc.encode(secretKeyMaterial.padEnd(32, '0').substring(0, 32)),
+            { name: "PBKDF2" },
+            false,
+            ["deriveKey"]
         );
         return crypto.subtle.deriveKey(
             {
                 name: "PBKDF2",
-                salt: enc.encode("chidoi_fixed_salt"),
+                salt: enc.encode("ChiDoisaltStatic"),
                 iterations: 100000,
                 hash: "SHA-256"
             },
@@ -50,57 +59,52 @@ const SecurityEngine = {
         );
     },
 
-    async encryptAESGCM(plainText) {
+    async encryptAES256(plainText) {
         try {
+            if (!plainText) return '';
             const key = await this.getAESKey();
             const iv = crypto.getRandomValues(new Uint8Array(12));
-            const enc = new TextEncoder();
-            const ciphertext = await crypto.subtle.encrypt(
+            const encoded = new TextEncoder().encode(plainText);
+            const cipherBuffer = await crypto.subtle.encrypt(
                 { name: "AES-GCM", iv: iv },
                 key,
-                enc.encode(plainText)
+                encoded
             );
+            
+            const combined = new Uint8Array(iv.length + cipherBuffer.byteLength);
+            combined.set(iv);
+            combined.set(new Uint8Array(cipherBuffer), iv.length);
 
-            const ivBase64 = btoa(String.fromCharCode(...iv));
-            const cipherBase64 = btoa(String.fromCharCode(...new Uint8Array(ciphertext)));
-
-            return JSON.stringify({ iv: ivBase64, data: cipherBase64 });
+            return btoa(String.fromCharCode.apply(null, combined));
         } catch (e) {
-            console.error("Encryption Error:", e);
             return plainText;
         }
     },
 
-    async decryptAESGCM(encryptedPayload) {
+    async decryptAES256(cipherBase64) {
         try {
-            const payload = JSON.parse(encryptedPayload);
+            if (!cipherBase64 || (!cipherBase64.includes('==') && cipherBase64.length < 20)) {
+                return cipherBase64;
+            }
             const key = await this.getAESKey();
+            const binaryString = atob(cipherBase64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
 
-            const iv = Uint8Array.from(atob(payload.iv), c => c.charCodeAt(0));
-            const ciphertext = Uint8Array.from(atob(payload.data), c => c.charCodeAt(0));
+            const iv = bytes.slice(0, 12);
+            const cipherBuffer = bytes.slice(12);
 
-            const decrypted = await crypto.subtle.decrypt(
+            const decryptedBuffer = await crypto.subtle.decrypt(
                 { name: "AES-GCM", iv: iv },
                 key,
-                ciphertext
+                cipherBuffer
             );
-
-            return new TextDecoder().decode(decrypted);
+            return new TextDecoder().decode(decryptedBuffer);
         } catch (e) {
-            return typeof encryptedPayload === 'string' ? encryptedPayload : '[Tin nhắn mã hóa]';
+            return cipherBase64;
         }
-    },
-
-    sanitizeHTML(str) {
-        if (!str) return '';
-        return str.replace(/[&<>"']/g, function (m) {
-            return {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            }[m];
-        });
     }
 };
