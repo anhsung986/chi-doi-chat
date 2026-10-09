@@ -25,6 +25,7 @@
         }
         input:focus { border-color: #06b6d4 !important; outline: none; }
         button { cursor: pointer; }
+        a { text-decoration: none; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex items-center justify-center p-4">
@@ -63,12 +64,12 @@
 
             <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold py-3 rounded-lg transition shadow-md flex items-center justify-center gap-2">
                 <i class="fa-solid fa-user-plus"></i>
-                <span>Đăng Ký Tài Khoản</span>
+                <span>Tạo Tài Khoản Mới</span>
             </button>
         </form>
 
         <div class="text-center text-xs text-slate-400">
-            Đã có tài khoản? <a href="login.html" class="text-cyan-400 hover:underline">Đăng nhập ngay</a>
+            Đã có tài khoản? <a href="login.html" class="text-cyan-400 hover:underline font-semibold">Đăng nhập ngay</a>
         </div>
     </div>
 
@@ -77,6 +78,10 @@
     <script src="js/crypto.js"></script>
     <script src="js/db.js"></script>
     <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            db.clearSession();
+        });
+    </script>
 </body>
 </html>
-              
