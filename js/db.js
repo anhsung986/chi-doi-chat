@@ -1,6 +1,5 @@
 /**
  * Database Engine - Firebase Realtime Database Integration
- * Project: chi-doi-chat (CHI DOI CHAT)
  */
 const firebaseConfig = {
   apiKey: "AIzaSyB_AoBl-M3fueTt78MRbkFJLL1uvdFZETU",
@@ -19,14 +18,12 @@ if (typeof firebase !== 'undefined' && !firebase.apps.length) {
 const rtdb = (typeof firebase !== 'undefined') ? firebase.database() : null;
 
 const db = {
-    // 1. Quản lý Tài khoản & Trạng thái Online/Offline Realtime
     async saveUserToFirebase(user) {
         try {
             if (!rtdb) return false;
             await rtdb.ref('users/' + user.id).set(user);
             return true;
         } catch (e) {
-            console.error("Lỗi lưu user Firebase:", e);
             return false;
         }
     },
@@ -46,25 +43,21 @@ const db = {
         if (!rtdb) return;
         rtdb.ref('users').on('value', (snapshot) => {
             const data = snapshot.val();
-            const userList = data ? Object.values(data) : [];
-            callback(userList);
+            callback(data ? Object.values(data) : []);
         });
     },
 
-    // Kích hoạt theo dõi Trạng thái Online/Offline
     initPresence(userId) {
         if (!rtdb || !userId) return;
-        const myPresenceRef = rtdb.ref(`users/${userId}/online`);
-        const connectedRef = rtdb.ref('.info/connected');
-        connectedRef.on('value', (snap) => {
+        const myRef = rtdb.ref(`users/${userId}/online`);
+        rtdb.ref('.info/connected').on('value', (snap) => {
             if (snap.val() === true) {
-                myPresenceRef.onDisconnect().set(false);
-                myPresenceRef.set(true);
+                myRef.onDisconnect().set(false);
+                myRef.set(true);
             }
         });
     },
 
-    // 2. Quản lý Session
     getSession() {
         try {
             const data = sessionStorage.getItem('chidoi_session');
@@ -88,13 +81,12 @@ const db = {
         localStorage.removeItem('chidoi_session');
     },
 
-    // 3. Quản lý Tin nhắn, Reactions, Typing, Pin, Recall
     async saveMessageToFirebase(roomId, msg) {
         try {
             if (!rtdb) return;
             await rtdb.ref(`messages/${roomId}/${msg.id}`).set(msg);
         } catch (e) {
-            console.error("Lỗi gửi tin nhắn:", e);
+            alert("Gửi tin nhắn thất bại!");
         }
     },
 
@@ -111,24 +103,17 @@ const db = {
     },
 
     stopListenMessages(roomId) {
-        if (rtdb) {
-            rtdb.ref(`messages/${roomId}`).off();
-        }
+        if (rtdb) rtdb.ref(`messages/${roomId}`).off();
     },
 
-    // Thả cảm xúc
     async toggleReaction(roomId, msgId, userId, emoji) {
         if (!rtdb) return;
         const ref = rtdb.ref(`messages/${roomId}/${msgId}/reactions/${userId}`);
         const snap = await ref.once('value');
-        if (snap.val() === emoji) {
-            await ref.remove();
-        } else {
-            await ref.set(emoji);
-        }
+        if (snap.val() === emoji) await ref.remove();
+        else await ref.set(emoji);
     },
 
-    // Thu hồi tin nhắn
     async recallMessage(roomId, msgId) {
         if (!rtdb) return;
         await rtdb.ref(`messages/${roomId}/${msgId}`).update({
@@ -138,7 +123,6 @@ const db = {
         });
     },
 
-    // Ghim tin nhắn
     async pinMessage(roomId, msgId, isPinned) {
         if (!rtdb) return;
         if (isPinned) {
@@ -154,7 +138,6 @@ const db = {
         rtdb.ref(`pinned/${roomId}`).on('value', (snap) => callback(snap.val()));
     },
 
-    // Đang gõ phím
     setTypingStatus(roomId, userId, username, isTyping) {
         if (!rtdb) return;
         rtdb.ref(`typing/${roomId}/${userId}`).set(isTyping ? { username, timestamp: Date.now() } : null);
@@ -168,6 +151,46 @@ const db = {
                 .filter(([uid, val]) => uid !== currentUserId && val && (Date.now() - val.timestamp < 4000))
                 .map(([_, val]) => val.username);
             callback(typers);
+        });
+    },
+
+    // Quản lý Biệt danh cá nhân
+    setLocalNickname(targetUserId, nickname) {
+        const user = this.getSession();
+        if (!user) return;
+        localStorage.setItem(`nick_${user.id}_${targetUserId}`, nickname);
+    },
+
+    getLocalNickname(targetUserId, defaultName) {
+        const user = this.getSession();
+        if (!user) return defaultName;
+        return localStorage.getItem(`nick_${user.id}_${targetUserId}`) || defaultName;
+    },
+
+    // Quản lý Mối quan hệ Người yêu
+    async sendLoveProposal(fromUser, toUserId) {
+        if (!rtdb) return;
+        const proposalId = 'love_' + [fromUser.id, toUserId].sort().join('_');
+        await rtdb.ref(`relationships/${proposalId}`).set({
+            id: proposalId,
+            fromId: fromUser.id,
+            fromName: fromUser.displayName || fromUser.username,
+            toId: toUserId,
+            status: 'pending',
+            timestamp: Date.now()
+        });
+    },
+
+    async respondLoveProposal(proposalId, status) {
+        if (!rtdb) return;
+        await rtdb.ref(`relationships/${proposalId}`).update({ status });
+    },
+
+    listenRelationship(userId1, userId2, callback) {
+        if (!rtdb) return;
+        const proposalId = 'love_' + [userId1, userId2].sort().join('_');
+        rtdb.ref(`relationships/${proposalId}`).on('value', (snap) => {
+            callback(snap.val());
         });
     }
 };
