@@ -1,20 +1,30 @@
 /**
  * Authentication & Profile Manager
- * Tải ảnh trực tiếp, nén Base64 canvas, giữ nguyên userId cố định.
  */
 const auth = {
     selectedBase64Image: null,
 
     async handleRegister(e) {
         e.preventDefault();
+        db.clearSession(); // Làm sạch phiên làm việc cũ
+
         const errorEl = document.getElementById('reg-error');
         errorEl.classList.add('hidden');
 
         const username = document.getElementById('reg-username').value.trim();
-        const password = document.getElementById('reg-password').value;
         const email = document.getElementById('reg-email').value.trim();
         const phone = document.getElementById('reg-phone').value.trim();
+        const password = document.getElementById('reg-password').value;
+        const confirmPassword = document.getElementById('reg-confirm-password').value;
 
+        // 1. Kiểm tra hai mật khẩu khớp nhau
+        if (password !== confirmPassword) {
+            errorEl.innerText = "Mật khẩu nhập lại không khớp!";
+            errorEl.classList.remove('hidden');
+            return;
+        }
+
+        // 2. Kiểm tra chuẩn Mật khẩu Cấp 5
         const secCheck = SecurityEngine.validatePasswordLevel5(password);
         if (!secCheck.valid) {
             errorEl.innerText = secCheck.msg;
@@ -22,6 +32,7 @@ const auth = {
             return;
         }
 
+        // 3. Kiểm tra trùng tên đăng nhập
         const users = await db.getUsersOnce();
         if (users.some(u => u.username === username)) {
             errorEl.innerText = "Tên đăng nhập đã tồn tại!";
@@ -43,13 +54,15 @@ const auth = {
 
         const success = await db.saveUserToFirebase(newUser);
         if (success) {
-            alert("Đăng ký tài khoản thành công!");
+            alert("Đăng ký tài khoản thành công! Hãy đăng nhập bằng tài khoản vừa tạo.");
             window.location.href = 'login.html';
         }
     },
 
     async handleLogin(e) {
         e.preventDefault();
+        db.clearSession(); // Làm sạch phiên làm việc cũ
+
         const errorEl = document.getElementById('login-error');
         errorEl.classList.add('hidden');
 
@@ -204,3 +217,4 @@ const auth = {
         }
     }
 };
+        
