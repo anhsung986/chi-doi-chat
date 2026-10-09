@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        html, body { background-color: #0f172a !important; color: #f8fafc !important; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; }
+        html, body { background-color: #0f172a !important; color: #f8fafc !important; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; height: 100%; overflow: hidden; }
         .bg-slate-900 { background-color: #0f172a !important; }
         .bg-slate-800 { background-color: #1e293b !important; }
         .bg-cyan-600 { background-color: #0891b2 !important; }
@@ -20,9 +20,10 @@
         [data-theme="rose"] .bg-cyan-600 { background-color: #e11d48 !important; }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
-    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+<body class="bg-slate-900 text-slate-100 font-sans flex flex-col h-screen overflow-hidden">
+    <!-- Header cho desktop -->
+    <header class="hidden md:flex bg-slate-800 border-b border-slate-700 h-16 shrink-0 items-center">
+        <div class="max-w-7xl mx-auto px-4 w-full flex items-center justify-between">
             <div class="flex items-center space-x-3"><i class="fa-solid fa-shield-cat text-cyan-400 text-2xl"></i><span class="font-bold text-xl text-cyan-400">CHI DOI CHAT</span></div>
             <nav class="flex items-center space-x-5">
                 <a href="chat-group.html" class="hover:text-cyan-400 text-sm flex items-center gap-1"><i class="fa-solid fa-users"></i> Chat Nhóm</a>
@@ -31,29 +32,47 @@
             </nav>
         </div>
     </header>
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-5rem)]">
-        <aside class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-60 md:h-full">
-            <div class="p-4 border-b border-slate-700"><span class="font-bold text-sm">Chọn Bạn Chat 1-1</span></div>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-2 md:p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] pb-16 md:pb-4 overflow-hidden">
+        <aside class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-32 md:h-full shrink-0">
+            <div class="p-2.5 border-b border-slate-700"><span class="font-bold text-xs uppercase text-slate-400">Chọn Bạn Chat 1-1</span></div>
             <div id="private-users-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
         </aside>
-        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full">
-            <div class="p-4 border-b border-slate-700 flex flex-wrap justify-between items-center gap-2">
+        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full min-h-0">
+            <div class="p-3 border-b border-slate-700 flex flex-wrap justify-between items-center gap-2 shrink-0">
                 <div>
-                    <h3 id="private-title" class="font-bold text-base text-cyan-400"><i class="fa-solid fa-lock"></i> Chưa chọn đối phương</h3>
-                    <div id="private-actions" class="hidden flex items-center gap-2 mt-2">
-                        <button id="btn-nickname" class="text-xs bg-slate-900 border border-slate-700 text-cyan-400 px-2.5 py-1 rounded-lg"><i class="fa-solid fa-pen"></i> Đổi Biệt Danh</button>
-                        <button id="btn-love" class="text-xs bg-rose-950 border border-rose-800 text-rose-400 px-2.5 py-1 rounded-lg"><i class="fa-solid fa-heart"></i> Mời Người Yêu ❤️</button>
+                    <h3 id="private-title" class="font-bold text-sm text-cyan-400"><i class="fa-solid fa-lock"></i> Chưa chọn đối phương</h3>
+                    <div id="private-actions" class="hidden flex items-center gap-2 mt-1.5">
+                        <button id="btn-nickname" class="text-[11px] bg-slate-900 border border-slate-700 text-cyan-400 px-2 py-0.5 rounded-lg"><i class="fa-solid fa-pen"></i> Đổi Biệt Danh</button>
+                        <button id="btn-love" class="text-[11px] bg-rose-950 border border-rose-800 text-rose-400 px-2 py-0.5 rounded-lg"><i class="fa-solid fa-heart"></i> Mời Người Yêu ❤️</button>
                     </div>
                 </div>
             </div>
-            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-900"></div>
-            <form onsubmit="chat.sendMessage(event)" class="p-3 bg-slate-800 border-t border-slate-700 flex gap-2">
-                <button type="button" id="img-btn" disabled onclick="chat.triggerImageUpload()" class="bg-slate-900 text-cyan-400 p-3 rounded-lg border border-slate-700 disabled:opacity-50"><i class="fa-solid fa-image"></i></button>
-                <input type="text" id="chat-input" disabled placeholder="Chọn người dùng để nhắn tin..." class="flex-1 px-4 py-3 text-sm outline-none disabled:opacity-50">
-                <button type="submit" id="chat-btn" disabled class="bg-cyan-600 text-white px-6 py-3 rounded-lg font-medium disabled:opacity-50"><i class="fa-solid fa-paper-plane"></i></button>
+            <div id="chat-messages" class="flex-1 p-3 md:p-4 overflow-y-auto space-y-3 bg-slate-900 min-h-0"></div>
+            <form onsubmit="chat.sendMessage(event)" class="p-2.5 bg-slate-800 border-t border-slate-700 flex gap-2 items-center shrink-0">
+                <button type="button" id="img-btn" disabled onclick="chat.triggerImageUpload()" class="bg-slate-900 text-cyan-400 p-2.5 rounded-lg border border-slate-700 disabled:opacity-50"><i class="fa-solid fa-image"></i></button>
+                <input type="text" id="chat-input" disabled placeholder="Chọn người dùng..." class="flex-1 px-3 py-2.5 text-sm outline-none disabled:opacity-50">
+                <button type="submit" id="chat-btn" disabled class="bg-cyan-600 text-white px-4 py-2.5 rounded-lg font-medium disabled:opacity-50"><i class="fa-solid fa-paper-plane"></i></button>
             </form>
         </section>
     </main>
+
+    <!-- Thanh điều hướng dưới cùng cố định -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 h-16 flex justify-around items-center z-50 px-2 shadow-2xl">
+        <a href="chat-group.html" class="flex flex-col items-center justify-center flex-1 text-slate-400 hover:text-cyan-400 py-1">
+            <i class="fa-solid fa-users text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Nhóm</span>
+        </a>
+        <a href="chat-private.html" class="flex flex-col items-center justify-center flex-1 text-cyan-400 py-1">
+            <i class="fa-solid fa-lock text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Riêng tư</span>
+        </a>
+        <button onclick="auth.logout()" class="flex flex-col items-center justify-center flex-1 text-rose-400 py-1">
+            <i class="fa-solid fa-right-from-bracket text-lg"></i>
+            <span class="text-[10px] font-medium mt-1">Thoát</span>
+        </button>
+    </nav>
+
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="js/crypto.js"></script><script src="js/db.js"></script><script src="js/auth.js"></script><script src="js/chat.js"></script>
