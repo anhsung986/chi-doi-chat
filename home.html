@@ -12,7 +12,7 @@
         .bg-slate-800 { background-color: #1e293b !important; }
         .bg-cyan-600 { background-color: #0891b2 !important; }
         .text-cyan-400 { color: #22d3ee !important; }
-        input[type="text"], input[type="email"], input[type="tel"], input[type="password"] { background-color: #0f172a !important; color: #fff !important; border: 1px solid #334155 !important; border-radius: 0.5rem; }
+        input[type="text"] { background-color: #0f172a !important; color: #fff !important; border: 1px solid #334155 !important; border-radius: 0.5rem; }
         input:focus { border-color: #06b6d4 !important; outline: none; }
         [data-theme="emerald"] .text-cyan-400 { color: #34d399 !important; }
         [data-theme="emerald"] .bg-cyan-600 { color: #fff !important; background-color: #059669 !important; }
@@ -37,7 +37,7 @@
 
     <!-- Main Container -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-2 md:p-4 flex gap-4 h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] pb-16 md:pb-4 overflow-hidden relative">
-        <!-- Sidebar trái: Trên mobile sẽ ẩn đi nếu đang mở khung chat để tránh chật chội -->
+        <!-- Sidebar trái: Trên mobile có thể ẩn/hiện bằng nút chuyển tab -->
         <aside id="main-sidebar" class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-full shrink-0">
             <div class="p-3 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
                 <span id="sidebar-title" class="font-bold text-xs uppercase text-slate-400">Thành Viên Trực Tuyến</span>
@@ -46,13 +46,12 @@
             <div id="friends-list" class="flex-1 overflow-y-auto p-2 space-y-1.5"></div>
         </aside>
 
-        <!-- Khung hiển thị nội dung bên phải -->
-        <section id="main-chat-section" class="w-full md:flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full min-h-0 relative hidden md:flex">
+        <!-- Khung chat / nội dung chính luôn hiển thị ô nhập tin nhắn -->
+        <section id="main-chat-section" class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full min-h-0 relative">
             <div class="p-3 border-b border-slate-700 flex justify-between items-center shrink-0 bg-slate-900/50">
-                <div class="flex items-center gap-2">
-                    <!-- Nút quay lại trên mobile khi đang trong phòng chat -->
-                    <button onclick="mobileBackToSidebar()" class="md:hidden text-cyan-400 text-base px-2 py-1 cursor-pointer"><i class="fa-solid fa-arrow-left"></i></button>
-                    <div>
+                <div class="flex items-center gap-2 w-full">
+                    <button onclick="mobileBackToSidebar()" class="md:hidden text-cyan-400 text-base px-2 py-1 cursor-pointer" title="Xem danh sách"><i class="fa-solid fa-bars-staggered"></i></button>
+                    <div class="flex-1">
                         <h3 id="room-title" class="font-bold text-sm text-cyan-400"><i class="fa-solid fa-comments"></i> PHÒNG CHAT NHÓM CHUNG</h3>
                         <div id="private-actions" class="hidden flex items-center gap-2 mt-1.5">
                             <button id="btn-nickname" class="text-[11px] bg-slate-900 border border-slate-700 text-cyan-400 px-2 py-0.5 rounded-lg cursor-pointer"><i class="fa-solid fa-pen"></i> Đổi Biệt Danh</button>
@@ -62,7 +61,6 @@
                 </div>
             </div>
             
-            <!-- Khu vực nội dung động -->
             <div id="dynamic-content-area" class="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div id="chat-messages" class="flex-1 p-3 md:p-4 overflow-y-auto space-y-3 bg-slate-900 min-h-0"></div>
                 <form id="chat-form-container" onsubmit="chat.sendMessage(event)" class="p-2.5 bg-slate-800 border-t border-slate-700 flex gap-2 items-center shrink-0">
@@ -144,17 +142,14 @@
             });
         }
 
-        function mobileOpenChat() {
-            if (window.innerWidth < 768) {
-                document.getElementById('main-sidebar').style.display = 'none';
-                document.getElementById('main-chat-section').style.display = 'flex';
-            }
-        }
-
         function mobileBackToSidebar() {
-            if (window.innerWidth < 768) {
-                document.getElementById('main-sidebar').style.display = 'flex';
-                document.getElementById('main-chat-section').style.display = 'none';
+            const sidebar = document.getElementById('main-sidebar');
+            if (sidebar.style.display === 'none' || sidebar.classList.contains('hidden')) {
+                sidebar.style.display = 'flex';
+                sidebar.classList.remove('hidden');
+            } else {
+                sidebar.style.display = 'none';
+                sidebar.classList.add('hidden');
             }
         }
 
@@ -162,23 +157,15 @@
             currentMode = mode;
             updateNavHighlight(mode);
             const sidebar = document.getElementById('main-sidebar');
-            const chatSection = document.getElementById('main-chat-section');
-            const contentArea = document.getElementById('dynamic-content-area');
             const roomTitle = document.getElementById('room-title');
             const privateActions = document.getElementById('private-actions');
+            const contentArea = document.getElementById('dynamic-content-area');
 
             privateActions.classList.add('hidden');
 
-            // Trên mobile khi đổi tab, luôn hiện sidebar trước để dễ chọn
-            if (window.innerWidth < 768) {
-                sidebar.style.display = 'flex';
-                chatSection.style.display = 'none';
-            } else {
-                sidebar.style.display = 'flex';
-                chatSection.style.display = 'flex';
-            }
-
             if (mode === 'group') {
+                sidebar.style.display = 'flex';
+                sidebar.classList.remove('hidden');
                 roomTitle.innerHTML = `<i class="fa-solid fa-comments"></i> PHÒNG CHAT NHÓM CHUNG`;
                 document.getElementById('sidebar-title').innerText = "Thành Viên Trực Tuyến";
                 contentArea.innerHTML = `
@@ -192,6 +179,8 @@
                 chat.switchRoom('group');
                 loadGroupUsers();
             } else if (mode === 'private') {
+                sidebar.style.display = 'flex';
+                sidebar.classList.remove('hidden');
                 roomTitle.innerHTML = `<i class="fa-solid fa-user-group"></i> Chọn đối phương để nhắn riêng`;
                 document.getElementById('sidebar-title').innerText = "Chọn Bạn Chat 1-1";
                 contentArea.innerHTML = `
@@ -205,7 +194,7 @@
                 loadPrivateUsers();
             } else if (mode === 'profile') {
                 sidebar.style.display = 'none';
-                chatSection.style.display = 'flex';
+                sidebar.classList.add('hidden');
                 roomTitle.innerHTML = `<i class="fa-solid fa-user-gear"></i> TRANG CÁ NHÂN & TÀI KHOẢN`;
                 contentArea.innerHTML = `
                     <div class="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-900 flex flex-col items-center justify-center">
@@ -218,17 +207,16 @@
                                 <p class="text-xs text-slate-400">ID: ${currentUser.id}</p>
                             </div>
                             <div class="space-y-3 text-xs">
-                                <div><span class="text-slate-400 block mb-1">Tên tài khoản (Username):</span><input type="text" disabled value="${currentUser.username}" class="w-full px-3 py-2 opacity-75"></div>
-                                <div><span class="text-slate-400 block mb-1">Email liên kết:</span><input type="text" disabled value="${currentUser.email || 'Chưa cập nhật'}" class="w-full px-3 py-2 opacity-75"></div>
+                                <div><span class="text-slate-400 block mb-1">Tên tài khoản:</span><input type="text" disabled value="${currentUser.username}" class="w-full px-3 py-2 opacity-75"></div>
+                                <div><span class="text-slate-400 block mb-1">Email:</span><input type="text" disabled value="${currentUser.email || 'Chưa cập nhật'}" class="w-full px-3 py-2 opacity-75"></div>
                                 <div><span class="text-slate-400 block mb-1">Số điện thoại:</span><input type="text" disabled value="${currentUser.phone || 'Chưa cập nhật'}" class="w-full px-3 py-2 opacity-75"></div>
                             </div>
-                            <button onclick="alert('Tính năng đổi thông tin chi tiết đang được bảo mật cấp 5.')" class="w-full py-2.5 bg-cyan-600 text-white font-medium rounded-xl text-xs hover:bg-cyan-500 transition-colors cursor-pointer">Cập Nhật Thông Tin</button>
                         </div>
                     </div>
                 `;
             } else if (mode === 'settings') {
                 sidebar.style.display = 'none';
-                chatSection.style.display = 'flex';
+                sidebar.classList.add('hidden');
                 roomTitle.innerHTML = `<i class="fa-solid fa-gear"></i> CÀI ĐẶT HỆ THỐNG`;
                 contentArea.innerHTML = `
                     <div class="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-900 flex flex-col items-center">
@@ -236,7 +224,7 @@
                             <h3 class="font-bold text-sm text-cyan-400 border-b border-slate-700 pb-2">Tùy Chọn Giao Diện & Bảo Mật</h3>
                             <div class="space-y-3 text-xs">
                                 <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
-                                    <span>Chủ đề màu sắc ứng dụng</span>
+                                    <span>Chủ đề màu sắc</span>
                                     <div class="flex gap-2">
                                         <button onclick="chat.setTheme('cyan')" class="w-5 h-5 rounded-full bg-cyan-500 cursor-pointer"></button>
                                         <button onclick="chat.setTheme('emerald')" class="w-5 h-5 rounded-full bg-emerald-500 cursor-pointer"></button>
@@ -244,15 +232,11 @@
                                     </div>
                                 </div>
                                 <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
-                                    <span>Chuẩn Mã Hóa Tin Nhắn</span>
-                                    <span class="text-emerald-400 font-semibold">AES-256-GCM (Cấp 5)</span>
-                                </div>
-                                <div class="flex justify-between items-center py-2">
-                                    <span>Trạng thái kết nối Firebase</span>
-                                    <span class="text-emerald-400 font-semibold">Đã kết nối Realtime</span>
+                                    <span>Chuẩn Mã Hóa</span>
+                                    <span class="text-emerald-400 font-semibold">AES-256-GCM</span>
                                 </div>
                             </div>
-                            <button onclick="auth.logout()" class="w-full py-2.5 bg-rose-950 border border-rose-800 text-rose-400 font-medium rounded-xl text-xs hover:bg-rose-900 transition-colors cursor-pointer mt-4">Đăng Xuất Phiên Làm Việc</button>
+                            <button onclick="auth.logout()" class="w-full py-2.5 bg-rose-950 border border-rose-800 text-rose-400 font-medium rounded-xl text-xs hover:bg-rose-900 transition-colors cursor-pointer mt-4">Đăng Xuất</button>
                         </div>
                     </div>
                 `;
@@ -263,6 +247,7 @@
             db.listenUsers((users) => {
                 if (currentMode !== 'group') return;
                 const list = document.getElementById('friends-list');
+                if (!list) return;
                 list.innerHTML = '';
                 document.getElementById('friends-count').innerText = users.filter(x => x.online).length;
                 users.forEach(u => {
@@ -270,7 +255,9 @@
                     item.className = 'flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/50 cursor-pointer hover:bg-slate-700/50 transition-colors';
                     item.onclick = () => {
                         chat.switchRoom('group');
-                        mobileOpenChat();
+                        if (window.innerWidth < 768) {
+                            document.getElementById('main-sidebar').style.display = 'none';
+                        }
                     };
                     item.innerHTML = `<div class="relative"><div class="w-8 h-8 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 text-xs"><i class="${u.icon || 'fa-solid fa-user'}"></i></div><span class="w-2.5 h-2.5 rounded-full ${u.online ? 'bg-emerald-400' : 'bg-slate-500'} absolute bottom-0 right-0 border-2 border-slate-800"></span></div><div class="text-xs font-semibold text-slate-200">${SecurityEngine.sanitizeHTML(u.displayName || u.username)}</div>`;
                     list.appendChild(item);
@@ -283,6 +270,7 @@
             db.listenUsers((users) => {
                 if (currentMode !== 'private') return;
                 const list = document.getElementById('friends-list');
+                if (!list) return;
                 list.innerHTML = '';
                 document.getElementById('friends-count').innerText = users.filter(x => x.id !== currentUser.id).length;
                 
@@ -299,7 +287,15 @@
                         
                         chat.switchRoom(roomId, target);
                         chat.initLoveStatusListener(target.id);
-                        mobileOpenChat();
+                        
+                        // Kích hoạt ô nhập khi đã chọn bạn chat
+                        document.getElementById('chat-input').disabled = false;
+                        document.getElementById('chat-btn').disabled = false;
+                        document.getElementById('img-btn').disabled = false;
+
+                        if (window.innerWidth < 768) {
+                            document.getElementById('main-sidebar').style.display = 'none';
+                        }
                     };
                     item.innerHTML = `<div class="relative"><div class="w-8 h-8 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 text-xs"><i class="${target.icon || 'fa-solid fa-user'}"></i></div><span class="w-2.5 h-2.5 rounded-full ${target.online ? 'bg-emerald-400' : 'bg-slate-500'} absolute bottom-0 right-0 border-2 border-slate-800"></span></div><div class="text-xs font-semibold text-slate-200">${SecurityEngine.sanitizeHTML(nick)}</div>`;
                     list.appendChild(item);
