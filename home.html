@@ -36,29 +36,33 @@
     </header>
 
     <!-- Main Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-2 md:p-4 flex flex-col md:flex-row gap-4 h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] pb-16 md:pb-4 overflow-hidden">
-        <!-- Sidebar trái (Dùng cho Chat nhóm & Chat riêng) -->
-        <aside id="main-sidebar" class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-36 md:h-full shrink-0">
-            <div class="p-2.5 border-b border-slate-700 flex justify-between items-center">
+    <main class="flex-1 max-w-7xl w-full mx-auto p-2 md:p-4 flex gap-4 h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] pb-16 md:pb-4 overflow-hidden relative">
+        <!-- Sidebar trái: Trên mobile sẽ ẩn đi nếu đang mở khung chat để tránh chật chội -->
+        <aside id="main-sidebar" class="w-full md:w-80 bg-slate-800 rounded-2xl border border-slate-700 flex flex-col overflow-hidden shadow-2xl h-full shrink-0">
+            <div class="p-3 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
                 <span id="sidebar-title" class="font-bold text-xs uppercase text-slate-400">Thành Viên Trực Tuyến</span>
-                <span id="friends-count" class="text-xs bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-800">0</span>
+                <span id="friends-count" class="text-xs bg-cyan-950 text-cyan-400 px-2.5 py-0.5 rounded-full border border-cyan-800">0</span>
             </div>
-            <div id="friends-list" class="flex-1 overflow-y-auto p-2 space-y-1"></div>
+            <div id="friends-list" class="flex-1 overflow-y-auto p-2 space-y-1.5"></div>
         </aside>
 
-        <!-- Khung hiển thị nội dung bên phải (Chat, Profile, Settings) -->
-        <section class="flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full min-h-0 relative">
-            <div class="p-3 border-b border-slate-700 flex justify-between items-center shrink-0">
-                <div>
-                    <h3 id="room-title" class="font-bold text-sm text-cyan-400"><i class="fa-solid fa-comments"></i> PHÒNG CHAT NHÓM CHUNG</h3>
-                    <div id="private-actions" class="hidden flex items-center gap-2 mt-1.5">
-                        <button id="btn-nickname" class="text-[11px] bg-slate-900 border border-slate-700 text-cyan-400 px-2 py-0.5 rounded-lg cursor-pointer"><i class="fa-solid fa-pen"></i> Đổi Biệt Danh</button>
-                        <button id="btn-love" class="text-[11px] bg-rose-950 border border-rose-800 text-rose-400 px-2 py-0.5 rounded-lg cursor-pointer"><i class="fa-solid fa-heart"></i> Mời Người Yêu ❤️</button>
+        <!-- Khung hiển thị nội dung bên phải -->
+        <section id="main-chat-section" class="w-full md:flex-1 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl h-full min-h-0 relative hidden md:flex">
+            <div class="p-3 border-b border-slate-700 flex justify-between items-center shrink-0 bg-slate-900/50">
+                <div class="flex items-center gap-2">
+                    <!-- Nút quay lại trên mobile khi đang trong phòng chat -->
+                    <button onclick="mobileBackToSidebar()" class="md:hidden text-cyan-400 text-base px-2 py-1 cursor-pointer"><i class="fa-solid fa-arrow-left"></i></button>
+                    <div>
+                        <h3 id="room-title" class="font-bold text-sm text-cyan-400"><i class="fa-solid fa-comments"></i> PHÒNG CHAT NHÓM CHUNG</h3>
+                        <div id="private-actions" class="hidden flex items-center gap-2 mt-1.5">
+                            <button id="btn-nickname" class="text-[11px] bg-slate-900 border border-slate-700 text-cyan-400 px-2 py-0.5 rounded-lg cursor-pointer"><i class="fa-solid fa-pen"></i> Đổi Biệt Danh</button>
+                            <button id="btn-love" class="text-[11px] bg-rose-950 border border-rose-800 text-rose-400 px-2 py-0.5 rounded-lg cursor-pointer"><i class="fa-solid fa-heart"></i> Mời Người Yêu ❤️</button>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Khu vực nội dung động (Chat hoặc Profile hoặc Settings) -->
+            <!-- Khu vực nội dung động -->
             <div id="dynamic-content-area" class="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div id="chat-messages" class="flex-1 p-3 md:p-4 overflow-y-auto space-y-3 bg-slate-900 min-h-0"></div>
                 <form id="chat-form-container" onsubmit="chat.sendMessage(event)" class="p-2.5 bg-slate-800 border-t border-slate-700 flex gap-2 items-center shrink-0">
@@ -140,18 +144,41 @@
             });
         }
 
+        function mobileOpenChat() {
+            if (window.innerWidth < 768) {
+                document.getElementById('main-sidebar').style.display = 'none';
+                document.getElementById('main-chat-section').style.display = 'flex';
+            }
+        }
+
+        function mobileBackToSidebar() {
+            if (window.innerWidth < 768) {
+                document.getElementById('main-sidebar').style.display = 'flex';
+                document.getElementById('main-chat-section').style.display = 'none';
+            }
+        }
+
         function switchTab(mode) {
             currentMode = mode;
             updateNavHighlight(mode);
             const sidebar = document.getElementById('main-sidebar');
+            const chatSection = document.getElementById('main-chat-section');
             const contentArea = document.getElementById('dynamic-content-area');
             const roomTitle = document.getElementById('room-title');
             const privateActions = document.getElementById('private-actions');
 
             privateActions.classList.add('hidden');
 
-            if (mode === 'group') {
+            // Trên mobile khi đổi tab, luôn hiện sidebar trước để dễ chọn
+            if (window.innerWidth < 768) {
                 sidebar.style.display = 'flex';
+                chatSection.style.display = 'none';
+            } else {
+                sidebar.style.display = 'flex';
+                chatSection.style.display = 'flex';
+            }
+
+            if (mode === 'group') {
                 roomTitle.innerHTML = `<i class="fa-solid fa-comments"></i> PHÒNG CHAT NHÓM CHUNG`;
                 document.getElementById('sidebar-title').innerText = "Thành Viên Trực Tuyến";
                 contentArea.innerHTML = `
@@ -165,7 +192,6 @@
                 chat.switchRoom('group');
                 loadGroupUsers();
             } else if (mode === 'private') {
-                sidebar.style.display = 'flex';
                 roomTitle.innerHTML = `<i class="fa-solid fa-user-group"></i> Chọn đối phương để nhắn riêng`;
                 document.getElementById('sidebar-title').innerText = "Chọn Bạn Chat 1-1";
                 contentArea.innerHTML = `
@@ -179,6 +205,7 @@
                 loadPrivateUsers();
             } else if (mode === 'profile') {
                 sidebar.style.display = 'none';
+                chatSection.style.display = 'flex';
                 roomTitle.innerHTML = `<i class="fa-solid fa-user-gear"></i> TRANG CÁ NHÂN & TÀI KHOẢN`;
                 contentArea.innerHTML = `
                     <div class="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-900 flex flex-col items-center justify-center">
@@ -201,6 +228,7 @@
                 `;
             } else if (mode === 'settings') {
                 sidebar.style.display = 'none';
+                chatSection.style.display = 'flex';
                 roomTitle.innerHTML = `<i class="fa-solid fa-gear"></i> CÀI ĐẶT HỆ THỐNG`;
                 contentArea.innerHTML = `
                     <div class="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-900 flex flex-col items-center">
@@ -239,7 +267,11 @@
                 document.getElementById('friends-count').innerText = users.filter(x => x.online).length;
                 users.forEach(u => {
                     const item = document.createElement('div');
-                    item.className = 'flex items-center gap-3 p-2 rounded-xl bg-slate-900/40 border border-slate-700/50';
+                    item.className = 'flex items-center gap-3 p-2.5 rounded-xl bg-slate-900/40 border border-slate-700/50 cursor-pointer hover:bg-slate-700/50 transition-colors';
+                    item.onclick = () => {
+                        chat.switchRoom('group');
+                        mobileOpenChat();
+                    };
                     item.innerHTML = `<div class="relative"><div class="w-8 h-8 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 text-xs"><i class="${u.icon || 'fa-solid fa-user'}"></i></div><span class="w-2.5 h-2.5 rounded-full ${u.online ? 'bg-emerald-400' : 'bg-slate-500'} absolute bottom-0 right-0 border-2 border-slate-800"></span></div><div class="text-xs font-semibold text-slate-200">${SecurityEngine.sanitizeHTML(u.displayName || u.username)}</div>`;
                     list.appendChild(item);
                 });
@@ -267,6 +299,7 @@
                         
                         chat.switchRoom(roomId, target);
                         chat.initLoveStatusListener(target.id);
+                        mobileOpenChat();
                     };
                     item.innerHTML = `<div class="relative"><div class="w-8 h-8 bg-slate-900 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 text-xs"><i class="${target.icon || 'fa-solid fa-user'}"></i></div><span class="w-2.5 h-2.5 rounded-full ${target.online ? 'bg-emerald-400' : 'bg-slate-500'} absolute bottom-0 right-0 border-2 border-slate-800"></span></div><div class="text-xs font-semibold text-slate-200">${SecurityEngine.sanitizeHTML(nick)}</div>`;
                     list.appendChild(item);
