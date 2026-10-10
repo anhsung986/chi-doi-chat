@@ -3,37 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHI DOI CHAT - Secure Realtime Messaging</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    
-    <!-- CSS Fallback bảo đảm hiển thị màu sắc -->
-    <style>
-        html, body { background-color: #0f172a !important; color: #f8fafc !important; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 0; }
-        .text-cyan-400 { color: #22d3ee !important; }
-        .text-slate-400 { color: #94a3b8 !important; }
-        .border-cyan-400 { border-color: #22d3ee !important; }
-    </style>
-</head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex items-center justify-center">
-    <div class="text-center space-y-4">
-        <div class="w-16 h-16 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p class="text-slate-400 text-sm">Đang kiểm tra phiên làm việc bảo mật...</p>
-    </div>
-
-    <script src="js/crypto.js"></script>
-    <script src="js/db.js"></script>
+    <title>CHI DOI CHAT</title>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const session = db.getSession();
+            const session = sessionStorage.getItem('chat_session');
             if (session) {
-                window.location.href = 'chat-group.html';
+                window.location.href = 'home.html';
             } else {
-                window.location.href = 'welcome.html';
+                window.location.href = 'login.html';
             }
         });
     </script>
+</head>
+<body style="background-color: #0f172a; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
+    <p>Đang tải ứng dụng...</p>
 </body>
 </html>
