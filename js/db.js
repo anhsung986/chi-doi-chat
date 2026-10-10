@@ -16,7 +16,9 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
-const database = firebase.database();
+
+// Khai báo ra window để các tệp khác (như auth.js, chat.js) gọi trực tiếp không bị lỗi undefined
+window.database = firebase.database();
 
 const db = {
     setSession(user) {
@@ -32,13 +34,13 @@ const db = {
 
     initPresence(userId) {
         if (!userId) return;
-        const userRef = database.ref('users/' + userId);
+        const userRef = window.database.ref('users/' + userId);
         userRef.update({ online: true });
         userRef.child('online').onDisconnect().set(false);
     },
 
     listenUsers(callback) {
-        database.ref('users').on('value', (snapshot) => {
+        window.database.ref('users').on('value', (snapshot) => {
             const data = snapshot.val() || {};
             const users = Object.keys(data).map(key => ({ id: key, ...data[key] }));
             callback(users);
